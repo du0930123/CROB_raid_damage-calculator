@@ -7,7 +7,7 @@ from typing import Dict, List
 # ============================
 # 고정 규칙
 # ============================
-COLOR_MATCH_BONUS = 0.30  # 약점 색으로 선택된 스킬은 항상 +30% (자동 적용)
+COLOR_MATCH_BONUS = 0.30  # 약점으로 선택된 색 스킬은 항상 +30% (자동 적용)
 COLOR_OPTIONS = ["빨강", "노랑", "파랑"]
 
 
@@ -22,34 +22,35 @@ class Character:
     crit_rate: float
     crit_bonus: float
     mp_cost: int
-    color: str  # "빨강" | "노랑" | "파랑"
-    party_damage_buff: float = 0.0
-    lepain_crit_buff: float = 0.0
+    color: str
+    party_damage_buff: float = 0.0  # 캡틴아이스 등 (파티 전체 피해증가, 최대 1회)
+    lepain_crit_buff: float = 0.0   # 레판 (치명타 추가딜, 최대 1회)
 
     def expected_damage(
         self,
-        common_damage_buff: float,
-        party_damage_buff: float,
-        lepain_crit_buff_total: float,
-        stone_crit_buff: float,
-        weakness_bonus_by_color: Dict[str, float],  # 예: {"노랑":0.40, "파랑":0.15}
+        common_damage_buff: float,              # 전원 공통 피해증가율(0~)
+        party_damage_buff_total: float,         # 캡틴 피해증가(최대 1회, 본인 포함)
+        lepain_crit_buff_total: float,          # 레판 치명타 추가딜(최대 1회)
+        stone_crit_buff: float,                 # 돌옵 치피(치명타에만 적용)
+        weakness_bonus_by_color: Dict[str, float],  # 약점 색별 조건부 피해증가율
     ) -> float:
         base = self.base_damage * self.hits
 
-        # 1) 전원 공통 피해증가(공통 + 캡틴)
-        dmg_mult = 1 + common_damage_buff + party_damage_buff
+        # ✅ 피해증가율은 전부 "합산"해서 한 번만 곱함
+        dmg_mult = 1 + common_damage_buff + party_damage_buff_total
 
-        # 2) 약점색이면 +30% 고정 보너스
+        # ✅ 약점 색으로 선택된 색 스킬이면 고정 +30%
         if self.color in weakness_bonus_by_color:
             dmg_mult += COLOR_MATCH_BONUS
 
-        # 3) 약점색(색별 상이) 조건부 피해증가율 추가
+        # ✅ 약점 색별 조건부 피해증가율(색마다 다르게)
         dmg_mult += weakness_bonus_by_color.get(self.color, 0.0)
 
-        # 4) 치명타 기대값
+        # 치명타 기대값
         if self.crit_rate <= 0:
             return base * dmg_mult
 
+        # ✅ 치명타 배율도 합산: 1 + crit_bonus + lepain + stone_crit
         crit_mult = 1 + self.crit_bonus + lepain_crit_buff_total + stone_crit_buff
         expected_mult = (1 - self.crit_rate) + self.crit_rate * crit_mult
 
@@ -110,9 +111,9 @@ def calculate_party(
     stone_crit_buff: float,
     weakness_bonus_by_color: Dict[str, float],
 ):
-    # ✅ 중첩 금지(각 1회)
-    party_damage_buff = max((c.party_damage_buff for c in party), default=0.0)
-    lepain_crit_buff = max((c.lepain_crit_buff for c in party), default=0.0)
+    # ✅ 중첩 금지: 각각 1회만 적용 (최대값 1개만)
+    party_damage_buff_total = max((c.party_damage_buff for c in party), default=0.0)
+    lepain_crit_buff_total = max((c.lepain_crit_buff for c in party), default=0.0)
 
     total_damage = 0.0
     total_mp = 0
@@ -120,15 +121,15 @@ def calculate_party(
     for c in party:
         total_damage += c.expected_damage(
             common_damage_buff=common_damage_buff,
-            party_damage_buff=party_damage_buff,
-            lepain_crit_buff_total=lepain_crit_buff,
+            party_damage_buff_total=party_damage_buff_total,
+            lepain_crit_buff_total=lepain_crit_buff_total,
             stone_crit_buff=stone_crit_buff,
             weakness_bonus_by_color=weakness_bonus_by_color
         )
         total_mp += c.mp_cost
 
     eff = total_damage / total_mp if total_mp > 0 else 0.0
-    return total_damage, eff, total_mp, party_damage_buff, lepain_crit_buff
+    return total_damage, eff, total_mp, party_damage_buff_total, lepain_crit_buff_total
 
 
 # ============================
@@ -140,8 +141,9 @@ st.caption("제작 : 카카오톡 오픈채팅방 쿠키런 only 레이드런방
 st.markdown("---")
 st.caption("입력 예: 비트 3 레판 1  |  이름과 수량을 공백으로 구분")
 st.markdown("---")
-st.caption("유틸 버프 종류 : 공주(+12%), 치어리더(+12%), 생케(+27%), 석류(+30%)")
-st.caption("약점으로 선택된 색 스킬은 자동으로 +30% (고정) + 약점 색별 조건부 피해증가율 추가 적용")
+st.caption("유틸 버프 종류 : 공주(+12%), 치어리더(+12%), 생케(+27%)")
+st.caption("약점으로 선택된 색 스킬: (1 + 공통 + 캡틴 + 0.30 + 약점조건부)로 합산 적용")
+st.caption("비약점 색 스킬: (1 + 공통 + 캡틴)만 적용")
 
 tab1, tab2 = st.tabs(["단일 파티 계산", "파티 여러 개 비교"])
 
@@ -157,13 +159,11 @@ with tab1:
 
     party_text = st.text_input("파티 구성", value="스네이크 3 캡틴아이스 1")
 
-    # 약점 색 선택 (최대 2개)
     weakness_colors = st.multiselect("보스 약점 색 선택 (최대 2개)", options=COLOR_OPTIONS, default=[])
     if len(weakness_colors) > 2:
         st.error("약점은 최대 2개까지만 선택할 수 있어.")
         weakness_colors = weakness_colors[:2]
 
-    # 선택된 약점 색마다 조건부 피해증가율 입력
     weakness_bonus_by_color: Dict[str, float] = {}
     if weakness_colors:
         st.markdown("#### 약점 색별 조건부 피해증가율(%) 입력")
@@ -179,12 +179,12 @@ with tab1:
     with col1:
         common_damage_buff_pct = st.number_input(
             "공통 피해증가율(%) (전원 적용)",
-            min_value=0.0, max_value=1000.0, value=0.0, step=1.0
+            min_value=0.0, max_value=1000.0, value=67.0, step=1.0
         )
     with col2:
         stone_crit_buff_pct = st.number_input(
             "돌옵션 중 치명타 피해 증가율(%)",
-            min_value=0.0, max_value=1000.0, value=0.0, step=1.0
+            min_value=0.0, max_value=1000.0, value=67.0, step=1.0
         )
 
     use_boss_hp = st.checkbox("보스 체력 기준 계산")
@@ -205,7 +205,7 @@ with tab1:
 
             st.subheader("적용 요약")
             if weakness_bonus_by_color:
-                pretty = ", ".join([f"{k} (+30% 고정 + {v*100:.0f}%)" for k, v in weakness_bonus_by_color.items()])
+                pretty = ", ".join([f"{k}(+30% 고정 + {v*100:.0f}%)" for k, v in weakness_bonus_by_color.items()])
                 st.write(f"- 약점 적용: **{pretty}**")
             else:
                 st.write("- 약점 적용: **없음**")
@@ -241,7 +241,7 @@ with tab2:
     weakness_colors_cmp = st.multiselect(
         "보스 약점 색 선택 (비교 기준, 최대 2개)",
         options=COLOR_OPTIONS,
-        default=[],
+        default=["노랑"],
         key="weakness_cmp"
     )
     if len(weakness_colors_cmp) > 2:
@@ -263,13 +263,13 @@ with tab2:
     with col1:
         common_damage_buff_pct_cmp = st.number_input(
             "공통 피해증가율(%) (비교 기준)",
-            min_value=0.0, max_value=1000.0, value=0.0, step=1.0,
+            min_value=0.0, max_value=1000.0, value=67.0, step=1.0,
             key="cmp_common"
         )
     with col2:
         stone_crit_buff_pct_cmp = st.number_input(
             "돌옵션 중 치명타 피해 증가율(%) (비교 기준)",
-            min_value=0.0, max_value=1000.0, value=0.0, step=1.0,
+            min_value=0.0, max_value=1000.0, value=67.0, step=1.0,
             key="cmp_crit"
         )
 
