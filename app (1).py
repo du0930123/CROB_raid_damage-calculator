@@ -186,7 +186,7 @@ if run:
 
             st.markdown("---")
             st.metric("총 딜량(기대값)", f"{total:,.0f}")
-            st.metric("총 스킬에너지당 딜량", f"{eff:, 2f}")
+            st.metric("총 스킬에너지당 딜량", f"{eff:,.2f}")
 
     except (ValueError, KeyError) as e:
         st.error(str(e))
