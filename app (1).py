@@ -141,7 +141,7 @@ st.caption("제작 : 카카오톡 오픈채팅방 쿠키런 only 레이드런방
 st.markdown("---")
 st.caption("입력 예: 비트 3 레판 1  |  이름과 수량을 공백으로 구분")
 st.markdown("---")
-st.caption("유틸 버프 종류 : 공주(+12%), 치어리더(+12%), 생케(+27%)")
+st.caption("유틸 버프 종류 : 공주(+12%), 치어리더(+12%), 생케(+27%), 석류(+30%)")
 st.caption("약점으로 선택된 색 스킬: (1 + 공통 + 캡틴 + 0.30 + 약점조건부)로 합산 적용")
 st.caption("비약점 색 스킬: (1 + 공통 + 캡틴)만 적용")
 
@@ -303,7 +303,7 @@ with tab2:
                     "파티 구성": line,
                     "약점 적용": ", ".join([f"{k}(+30%+{v*100:.0f}%)" for k, v in weakness_bonus_by_color_cmp.items()]) or "-",
                     "1사이클 총 딜량": int(dmg),
-                    "MP당 딜량": round(eff, 2),
+                    "스킬에너지당 딜량": round(eff, 2),
                     "필요 사이클 수": cycles,
                     "총 스킬에너지 소모": cycles * mp,
                 })
