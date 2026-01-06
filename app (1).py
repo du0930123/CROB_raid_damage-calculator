@@ -139,7 +139,7 @@ party_text = st.text_input("파티 구성", value="비트 1 레판 4")
 
 col1, col2 = st.columns(2)
 with col1:
-    damage_buff_pct = st.number_input("돌옵션 제외 피해 증가율 (%)", min_value=0.0, max_value=1000.0, value=0.0, step=1.0)
+    damage_buff_pct = st.number_input("돌옵션 + 약점 + 석류 딜버프 증가율 (%)", min_value=0.0, max_value=1000.0, value=0.0, step=1.0)
 with col2:
     stone_crit_buff_pct = st.number_input("돌옵션 치명타 피해 증가율 (%)", min_value=0.0, max_value=1000.0, value=25.0, step=1.0)
 
