@@ -199,7 +199,7 @@ with tab1:
         st.markdown("#### 약점 색별 조건부 피해증가율(%) 입력")
         for wc in weakness_colors:
             pct = st.number_input(
-                f"돌 옵션 : {wc} 색깔만의 피해증감율(%)",
+                f"돌옵션 : {wc} 색깔만의 피해증감율(%)",
                 min_value=-300.0, max_value=300.0, value=0.0, step=1.0,
                 key=f"weak_{wc}"
             )
