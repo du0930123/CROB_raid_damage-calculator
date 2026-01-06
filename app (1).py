@@ -163,14 +163,14 @@ if run:
                 stone_crit_buff=stone_crit_buff
             )
 
-            st.subheader("버프 적용 요약(중첩 금지)")
+            st.subheader("버프 적용 요약")
             st.write(f"- 캡틴아이스 파티 피해증가 적용: **{party_buff_total*100:.2f}%** (최대 1회)")
             st.write(f"- 레판 치명타 추가딜 적용: **{lepain_buff_total*100:.2f}%** (최대 1회)")
-            st.write(f"- 돌옵션 제외 피해증가율: **{damage_buff_pct:.2f}%**")
+            st.write(f"- 돌옵션 + 약점 + 석 피해증가율: **{damage_buff_pct:.2f}%**")
             st.write(f"- 돌옵션 치명타 피해증가율: **{stone_crit_buff_pct:.2f}%**")
 
             st.subheader("결과(기대값)")
-            st.write(f"- 총 MP: **{total_mp}**")
+            st.write(f"- 총 요구 스킬에너지: **{total_mp}**")
 
             rows = []
             for name, v in res.items():
@@ -178,15 +178,15 @@ if run:
                     "캐릭터": name,
                     "수량": int(v["count"]),
                     "총딜(기대값)": int(round(v["damage"])),
-                    "총MP": int(v["mp"]),
-                    "MP당딜": float(f"{v['dmg_per_mp']:.2f}"),
+                    "총요구스킬에너지": int(v["mp"]),
+                    "스킬에너지당 딜량": float(f"{v['dmg_per_mp']:.2f}"),
                 })
 
             st.dataframe(rows, use_container_width=True)
 
             st.markdown("---")
             st.metric("총 딜량(기대값)", f"{total:,.0f}")
-            st.metric("총 MP당 딜량", f"{eff:,.2f}")
+            st.metric("총 스킬에너지당 딜량량",  스킬eff: 딜량", f
 
     except (ValueError, KeyError) as e:
         st.error(str(e))
