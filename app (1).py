@@ -166,7 +166,7 @@ if run:
             st.subheader("버프 적용 요약")
             st.write(f"- 캡틴아이스 파티 피해증가 적용: **{party_buff_total*100:.2f}%** (최대 1회)")
             st.write(f"- 레판 치명타 추가딜 적용: **{lepain_buff_total*100:.2f}%** (최대 1회)")
-            st.write(f"- 돌옵션 + 약점 + 석 피해증가율: **{damage_buff_pct:.2f}%**")
+            st.write(f"- 돌옵션 + 약점(해당될 경우 30%) + 석류(해당될 경우30%) 피해증가율: **{damage_buff_pct:.2f}%**")
             st.write(f"- 돌옵션 치명타 피해증가율: **{stone_crit_buff_pct:.2f}%**")
 
             st.subheader("결과(기대값)")
@@ -185,8 +185,8 @@ if run:
             st.dataframe(rows, use_container_width=True)
 
             st.markdown("---")
-            st.metric("총 딜량(기대값)", f"{total:,.0f}")
-            st.metric("총 스킬에너지당 딜량", f"{eff:,.2f}")
+            st.metric("스킬 1회 사용시 총 딜량(기대값)", f"{total:,.0f}")
+            st.metric("스킬에너지당 총 딜량", f"{eff:,.2f}")
 
     except (ValueError, KeyError) as e:
         st.error(str(e))
