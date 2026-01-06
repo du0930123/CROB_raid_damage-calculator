@@ -7,7 +7,7 @@ from typing import Dict, List
 # ============================
 # 고정 규칙
 # ============================
-COLOR_MATCH_BONUS = 0.30  # 보스색 = 스킬색 일치 시 +30% (항상)
+COLOR_MATCH_BONUS = 0.30  # 약점 색으로 선택된 스킬은 항상 +30% (자동 적용)
 COLOR_OPTIONS = ["빨강", "노랑", "파랑"]
 
 
@@ -32,19 +32,18 @@ class Character:
         party_damage_buff: float,
         lepain_crit_buff_total: float,
         stone_crit_buff: float,
-        boss_color: str,
-        weakness_bonus_by_color: Dict[str, float],  # 예: {"노랑":0.40, "파랑":0.30}
+        weakness_bonus_by_color: Dict[str, float],  # 예: {"노랑":0.40, "파랑":0.15}
     ) -> float:
         base = self.base_damage * self.hits
 
-        # 1) 전원 공통 + 캡틴(최대 1회)
+        # 1) 전원 공통 피해증가(공통 + 캡틴)
         dmg_mult = 1 + common_damage_buff + party_damage_buff
 
-        # 2) 보스색 일치 고정 +30%
-        if boss_color != "선택 안 함" and self.color == boss_color:
+        # 2) 약점색이면 +30% 고정 보너스
+        if self.color in weakness_bonus_by_color:
             dmg_mult += COLOR_MATCH_BONUS
 
-        # 3) 약점색(색별 상이) 조건부 피해증가율
+        # 3) 약점색(색별 상이) 조건부 피해증가율 추가
         dmg_mult += weakness_bonus_by_color.get(self.color, 0.0)
 
         # 4) 치명타 기대값
@@ -109,7 +108,6 @@ def calculate_party(
     party: List[Character],
     common_damage_buff: float,
     stone_crit_buff: float,
-    boss_color: str,
     weakness_bonus_by_color: Dict[str, float],
 ):
     # ✅ 중첩 금지(각 1회)
@@ -125,7 +123,6 @@ def calculate_party(
             party_damage_buff=party_damage_buff,
             lepain_crit_buff_total=lepain_crit_buff,
             stone_crit_buff=stone_crit_buff,
-            boss_color=boss_color,
             weakness_bonus_by_color=weakness_bonus_by_color
         )
         total_mp += c.mp_cost
@@ -144,8 +141,7 @@ st.markdown("---")
 st.caption("입력 예: 비트 3 레판 1  |  이름과 수량을 공백으로 구분")
 st.markdown("---")
 st.caption("유틸 버프 종류 : 공주(+12%), 치어리더(+12%), 생케(+27%)")
-st.caption("보스 색 일치 고정 보너스: 보스 색과 같은 색 스킬만 +30% (자동 적용)")
-st.caption("보스 약점: 색을 선택하고, 선택된 색마다 조건부 피해증가율(%)을 따로 입력 가능 (최대 2개)")
+st.caption("약점으로 선택된 색 스킬은 자동으로 +30% (고정) + 약점 색별 조건부 피해증가율 추가 적용")
 
 tab1, tab2 = st.tabs(["단일 파티 계산", "파티 여러 개 비교"])
 
@@ -160,11 +156,9 @@ with tab1:
             st.write(f"- {color}: " + ", ".join(names))
 
     party_text = st.text_input("파티 구성", value="스네이크 3 캡틴아이스 1")
-    boss_color = st.selectbox("보스 색깔 선택", ["선택 안 함"] + COLOR_OPTIONS)
 
     # 약점 색 선택 (최대 2개)
     weakness_colors = st.multiselect("보스 약점 색 선택 (최대 2개)", options=COLOR_OPTIONS, default=[])
-
     if len(weakness_colors) > 2:
         st.error("약점은 최대 2개까지만 선택할 수 있어.")
         weakness_colors = weakness_colors[:2]
@@ -201,21 +195,21 @@ with tab1:
     if st.button("단일 파티 계산"):
         try:
             party = build_party_from_text(party_text)
+
             dmg, eff, mp, party_buff, lepain_buff = calculate_party(
                 party=party,
                 common_damage_buff=common_damage_buff_pct / 100.0,
                 stone_crit_buff=stone_crit_buff_pct / 100.0,
-                boss_color=boss_color,
                 weakness_bonus_by_color=weakness_bonus_by_color
             )
 
             st.subheader("적용 요약")
-            st.write(f"- 보스 색깔: **{boss_color}** (색 일치 스킬 +30% 고정)")
             if weakness_bonus_by_color:
-                pretty = ", ".join([f"{k}+{v*100:.0f}%" for k, v in weakness_bonus_by_color.items()])
-                st.write(f"- 약점 조건부: **{pretty}** (해당 색 스킬만)")
+                pretty = ", ".join([f"{k} (+30% 고정 + {v*100:.0f}%)" for k, v in weakness_bonus_by_color.items()])
+                st.write(f"- 약점 적용: **{pretty}**")
             else:
-                st.write("- 약점 조건부: **없음**")
+                st.write("- 약점 적용: **없음**")
+
             st.write(f"- 공통 피해증가율: **{common_damage_buff_pct:.0f}%** (전원 적용)")
             st.write(f"- 캡틴아이스 피해증가: **{party_buff*100:.2f}%** (최대 1회)")
             st.write(f"- 레판 치명타 추가딜: **{lepain_buff*100:.2f}%** (최대 1회)")
@@ -243,8 +237,6 @@ with tab2:
         value="비트 1 레판 4\n비트 2 레판 2\n캡틴아이스 1 비트 2 레판 1\n뱀파 1 레판 4\n스네이크 3 캡틴아이스 1",
         height=160
     )
-
-    boss_color_cmp = st.selectbox("보스 색깔 선택 (비교 기준)", ["선택 안 함"] + COLOR_OPTIONS, key="boss_color_cmp")
 
     weakness_colors_cmp = st.multiselect(
         "보스 약점 색 선택 (비교 기준, 최대 2개)",
@@ -302,7 +294,6 @@ with tab2:
                     party=party,
                     common_damage_buff=common_damage_buff_pct_cmp / 100.0,
                     stone_crit_buff=stone_crit_buff_pct_cmp / 100.0,
-                    boss_color=boss_color_cmp,
                     weakness_bonus_by_color=weakness_bonus_by_color_cmp
                 )
 
@@ -310,8 +301,7 @@ with tab2:
 
                 rows.append({
                     "파티 구성": line,
-                    "보스 색": boss_color_cmp,
-                    "약점 조건부": ", ".join([f"{k}+{v*100:.0f}%" for k, v in weakness_bonus_by_color_cmp.items()]) or "-",
+                    "약점 적용": ", ".join([f"{k}(+30%+{v*100:.0f}%)" for k, v in weakness_bonus_by_color_cmp.items()]) or "-",
                     "1사이클 총 딜량": int(dmg),
                     "MP당 딜량": round(eff, 2),
                     "필요 사이클 수": cycles,
@@ -319,9 +309,6 @@ with tab2:
                 })
 
             except Exception as e:
-                rows.append({
-                    "파티 구성": line,
-                    "오류": str(e)
-                })
+                rows.append({"파티 구성": line, "오류": str(e)})
 
         st.dataframe(rows, use_container_width=True)
