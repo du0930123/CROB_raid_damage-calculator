@@ -1,8 +1,5 @@
 # ↓↓↓ 이 아래에 Streamlit용 전체 코드 붙여넣기 ↓↓↓
 
-%%writefile requirements.txt
-streamlit
-
 import streamlit as st
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
