@@ -138,6 +138,7 @@ def calculate_party(
 st.set_page_config(page_title="CROB 파티 딜 계산", page_icon="🧮")
 st.title("🧮 쿠오븐 레이드파티 기대 딜량 계산")
 st.caption("제작 : 카카오톡 오픈채팅방 쿠키런 only 레이드런방 - 오늘컨별로네")
+st.caption("도움 : Nawg, 썸머, 솜이, 흑임자맛고양이")
 st.markdown("---")
 st.caption("입력 예: 비트 3 레판 1  |  이름과 수량을 공백으로 구분")
 st.markdown("---")
