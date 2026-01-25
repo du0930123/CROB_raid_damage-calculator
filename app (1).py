@@ -285,7 +285,7 @@ with tab1:
     party5_on = False
 
     if use_boss_hp:
-        boss_hp = st.number_input("보스 체력", min_value=1.0, value=100_000_000.0, step=1_000_000.0, format="%.0f")
+        boss_hp = st.number_input("보스 체력", min_value=1.0, value=1.0, step=1_000_000.0, format="%.0f")
 
         col_a, col_b = st.columns(2)
         with col_a:
@@ -442,7 +442,7 @@ with tab2:
     boss_hp_cmp = st.number_input(
         "보스 체력 (비교 기준)",
         min_value=1.0,
-        value=100_000_000.0,
+        value=1.0,
         step=1_000_000.0,
         format="%.0f",
         key="cmp_hp"
