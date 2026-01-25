@@ -291,7 +291,7 @@ with tab1:
         with col_a:
             boss_hp_inc_on = st.checkbox("보스 체력 증가 옵션", key="boss_hp_inc_on")
         with col_b:
-            party5_on = st.checkbox("파티원이 5명? (*5)", key="party5_on")
+            party5_on = st.checkbox("파티원이 5명? (입력된 보스체력*5 해주는 옵션임)", key="party5_on")
 
         if boss_hp_inc_on:
             boss_hp_inc_pct = st.number_input(
