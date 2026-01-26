@@ -223,7 +223,10 @@ st.caption("비약점 색 스킬: (1 + 공통 + 캡틴)만 적용")
 st.caption("※ 약점 조건부 피해증가율은 음수도 가능(딜 감소). 예: -20% 입력 가능")
 st.caption("※ '총 스킬에너지당 딜량' = Σ(각 스킬 딜량/각 스킬 에너지) 로 계산")
 
-tab1, tab2 = st.tabs(["단일 파티 계산", "파티 여러 개 비교"])
+from tab_threshold import render_threshold_tab
+
+tab1, tab2, tab3 = st.tabs(["단일 파티 계산", "파티 여러 개 비교", "파티사이클 클리어 경계값"])
+
 
 
 # ============================
@@ -514,6 +517,10 @@ with tab2:
                 rows.append({"파티 구성": line, "오류": str(e)})
 
         st.dataframe(rows, use_container_width=True)
+
+with tab3:
+    render_threshold_tab()
+
 
 st.markdown("---")
 st.caption("제작 : 카카오톡 오픈채팅방 쿠키런 only 레이드런방 - 오늘컨별로네")
