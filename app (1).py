@@ -473,6 +473,7 @@ with tab1:
                 game_speed_buff=game_speed_buff_pct / 100.0,
                 game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model else 0.0,
             )
+            P_effective = total_dmg_per_mp_sum * dps_ratio_async
             dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
 
             st.session_state["LAST_CALC_OPTS"] = {
