@@ -193,8 +193,6 @@ def render_clear_judge_box(
 
     clear_ok, required_energy, margin_pct = judge_clear(boss_hp=boss_hp, P=P, ref_required_norm=ref_required_norm)
 
-    st.write(f"- 필요 총 에너지(required_energy = boss_hp / P): **{required_energy:,.0f}**")
-    st.write(f"- 기준 정규화 한계(ref_required_norm, 가중평균): **{ref_required_norm:,.0f}**")
     if show_notice:
         st.markdown(
             """
