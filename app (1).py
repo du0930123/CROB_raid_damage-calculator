@@ -493,7 +493,18 @@ with tab1:
                 )
             else:
                 st.write("- 게임속도 증가율: **미적용**")
-                
+
+            dps_ratio_async = compute_async_dps_ratio(
+                party=party,
+                common_damage_buff=common_damage_buff_pct / 100.0,
+                stone_crit_buff=stone_crit_buff_pct / 100.0,
+                weakness_bonus_by_color=weakness_bonus_by_color,
+                energy_decrease_by_color=energy_decrease_by_color,
+                game_speed_buff=game_speed_buff_pct / 100.0,
+                game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model else 0.0,
+            )
+        
+        dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
             # ✅ 추가 출력(비동기합산 딜 감소율)
             st.write(f"- (비동기합산) 딜량 감소율: **{dps_drop_async_pct:.2f}%**")
 
