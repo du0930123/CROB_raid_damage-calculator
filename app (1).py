@@ -502,7 +502,7 @@ with tab1:
             else:
                 st.write("- 에너지획득량감소(색별): **없음**")
 
-            if show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
+            show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
                 st.write(
                     f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** "
                     f"(감쇠계수 {GAME_SPEED_ALPHA_DEFAULT:.2f} 적용)"
