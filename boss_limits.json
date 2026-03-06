@@ -1,0 +1,26 @@
+{
+  "두억시니": {
+    "profiles": [
+      {
+        "boss_hp_est": 21608724075.000004,
+        "label": "노랑(주로 스네 구성)",
+        "ref_P": 712195.6298076924,
+        "ref_common_damage_buff_pct": 30.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_party": "스네이크 5 캡틴아이스 1",
+        "ref_required_norm": 30340.995044907548,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 198245175.00000003,
+        "ref_total_mp": 1700,
+        "ref_vec": {
+          "스네이크": 0.7647058823529411,
+          "캡틴아이스": 0.23529411764705882
+        },
+        "ref_weakness_bonus_by_color": {
+          "노랑": 0.0
+        },
+        "threshold_cycles": 109
+      }
+    ]
+  }
+}
