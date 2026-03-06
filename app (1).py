@@ -501,14 +501,15 @@ with tab1:
                 st.write(f"- 에너지획득량감소(색별): **{epretty}**")
             else:
                 st.write("- 에너지획득량감소(색별): **없음**")
-
+            
+            if use_game_speed_model:
                 st.write(
                     f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** "
                     f"(감쇠계수 {GAME_SPEED_ALPHA_DEFAULT:.2f} 적용)"
                 )
             else:
                 st.write("- 게임속도 증가율: **미적용**")
-
+                
             # ✅ 추가 출력(비동기합산 딜 감소율)
             st.write(f"- (비동기합산) 딜량 감소율: **{dps_drop_async_pct:.2f}%**")
 
@@ -558,6 +559,7 @@ with tab1:
                 )
                 st.write(f"- 필요 총 에너지(required_energy = boss_hp / P): **{required_energy_base:,.0f}**")
                 st.write(f"- 기준 정규화 한계(ref_required_norm, 가중평균): **{ref_required_norm:,.0f}**")
+                
 
                 # 1) 겜속 미반영 판정은 항상 표시
                 render_clear_judge_box(
@@ -574,6 +576,7 @@ with tab1:
                 )
                 
                 # 2) 에너지감소 또는 겜속이 있을 때만 반영 판정 표시
+                show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
                 if show_async_block:
                     st.markdown("---")
                     render_clear_judge_box(
@@ -594,15 +597,15 @@ with tab1:
                 # ✅ 추가: (비동기합산 딜 감소율 반영) 사이클
                 effective_total_dmg_async = total_dmg * dps_ratio_async
                 cycles_with_energy_async = math.ceil(effective_boss_hp / effective_total_dmg_async) if effective_total_dmg_async > 0 else 0
-                show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
+
 
                 st.write(f"- 필요 파티 사이클: **{cycles} 회**")
-                if show_async_block::
+                if show_async_block:
                     st.write(f"- (에너지감소, 겜속 반영) 필요 파티 사이클: **{cycles_with_energy_async} 회**")
                     st.caption("※ 에너지감소 반영 (Σ(딜/요구 스킬젬량)) 기반으로 시간당 딜 감소를 반영해 보스 처치 사이클을 재산정한 값")
                 
                 st.write(f"- 예상 총 스킬에너지 소모: **{cycles * total_mp:,}**")
-                if show_async_block::
+                if show_async_block:
                     st.write(f"- (에너지감소, 겜속 반영) 예상 총 스킬에너지 소모: **{cycles_with_energy_async * total_mp:,}**")
     
         except Exception as e:
