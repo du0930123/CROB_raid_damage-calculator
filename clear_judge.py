@@ -165,18 +165,19 @@ def compute_energy_limit_weighted(
 def render_clear_judge_box(
     boss: str,
     boss_hp: float,
-    P: float,          # total_dmg_per_mp_sum
-    party,             # ✅ List[Character]
+    P: float,
+    party,
     key_prefix: str = "judge",
     show_match_info: bool = True,
     k_profiles: int = 5,
     weight_power: float = 1.0,
+    title: str = "정규화 클리어 판정",   # ✅ 추가
 ):
     """
     party_type 선택 없음.
     보스 profiles 풀에서 자동으로 ENERGY_LIMIT(가중평균)을 계산.
     """
-    st.markdown("### ✅ 정규화 클리어 판정")
+    st.markdown(f"### ✅ {title}")
 
     ref_required_norm, used, err = compute_energy_limit_weighted(
         boss=boss,
