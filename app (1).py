@@ -740,8 +740,21 @@ with tab2:
                 if party5_on_cmp:
                     effective_boss_hp_cmp *= 5.0
 
+                # ✅ 미반영 / 반영 P 분리
+                P_base = total_dmg_per_mp_sum
+                P_effective_cmp = total_dmg_per_mp_sum * dps_ratio_async
 
-                judge_cols = judge_clear_for_table(
+                # ✅ 판정 2개
+                judge_cols_base = judge_clear_for_table(
+                    boss=selected_boss_cmp,
+                    boss_hp=effective_boss_hp_cmp,
+                    P=P_base,
+                    party=party,
+                    k_profiles=5,
+                    weight_power=1.0,
+                )
+                
+                judge_cols_speed = judge_clear_for_table(
                     boss=selected_boss_cmp,
                     boss_hp=effective_boss_hp_cmp,
                     P=P_effective_cmp,
@@ -749,6 +762,7 @@ with tab2:
                     k_profiles=5,
                     weight_power=1.0,
                 )
+
                 
                 cycles = math.ceil(effective_boss_hp_cmp / total_dmg) if total_dmg > 0 else 0
                 effective_total_dmg_async = total_dmg * dps_ratio_async
@@ -757,7 +771,16 @@ with tab2:
                 
                 rows.append({
                     "파티 구성": line,
-                    **judge_cols,
+                
+                    "겜속 미반영 판정": judge_cols_base.get("정규화판정"),
+                    "겜속 미반영 여유율%": judge_cols_base.get("여유율"),
+                    "반영 판정": judge_cols_speed.get("정규화판정"),
+                    "반영 여유율%": judge_cols_speed.get("여유율"),
+                
+                    "기준 ref_required_norm": judge_cols_base.get("ref_required_norm(가중평균)"),
+                    "미반영 필요총에너지": judge_cols_base.get("필요총에너지(boss_hp/P)"),
+                    "반영 필요총에너지": judge_cols_speed.get("필요총에너지(boss_hp/P)"),
+                
                     "약점 적용": ", ".join([f"{k}(+30%+{v*100:+.0f}%)" for k, v in weakness_bonus_by_color_cmp.items()]) or "-",
                     "(비동기합산) 딜감소율%": float(f"{dps_drop_async_pct:.2f}"),
                     "1사이클 총 딜량": int(total_dmg),
@@ -766,9 +789,8 @@ with tab2:
                     "(에너지감소, 겜속 반영) 필요 사이클 수": cycles_with_energy_async,
                     "총 스킬에너지 소모(1사이클)": int(total_mp),
                     "총 스킬에너지 소모(처치)": int(cycles * total_mp),
-                    "(에너지감소, 겜속 반영) 총 스킬에너지 소모(처치)": int(cycles_with_energy_async * total_mp),                   
+                    "(에너지감소, 겜속 반영) 총 스킬에너지 소모(처치)": int(cycles_with_energy_async * total_mp),
                 })
-
             except Exception as e:
                 rows.append({"파티 구성": line, "오류": str(e)})
 
