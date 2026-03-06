@@ -502,7 +502,6 @@ with tab1:
             else:
                 st.write("- 에너지획득량감소(색별): **없음**")
 
-            show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
                 st.write(
                     f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** "
                     f"(감쇠계수 {GAME_SPEED_ALPHA_DEFAULT:.2f} 적용)"
@@ -598,12 +597,12 @@ with tab1:
                 show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
 
                 st.write(f"- 필요 파티 사이클: **{cycles} 회**")
-                if use_game_speed_model:
+                if show_async_block::
                     st.write(f"- (에너지감소, 겜속 반영) 필요 파티 사이클: **{cycles_with_energy_async} 회**")
                     st.caption("※ 에너지감소 반영 (Σ(딜/요구 스킬젬량)) 기반으로 시간당 딜 감소를 반영해 보스 처치 사이클을 재산정한 값")
                 
                 st.write(f"- 예상 총 스킬에너지 소모: **{cycles * total_mp:,}**")
-                if use_game_speed_model:
+                if show_async_block::
                     st.write(f"- (에너지감소, 겜속 반영) 예상 총 스킬에너지 소모: **{cycles_with_energy_async * total_mp:,}**")
     
         except Exception as e:
