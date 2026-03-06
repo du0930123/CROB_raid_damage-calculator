@@ -2,8 +2,12 @@ import streamlit as st
 import math
 from dataclasses import dataclass
 from typing import Dict, List
+from clear_judge import render_clear_judge_box, judge_clear_for_table
+from tab_threshold import render_threshold_tab
+from boss_limits_store import load_limits
+load_limits()
 
-
+    
 # ============================
 # 고정 규칙
 # ============================
@@ -81,10 +85,42 @@ CHARACTER_DB: Dict[str, Character] = {
     "뱀파": Character("뱀파", 4462500, 4, 0.0, 0.0, 340, color="빨강"),
 }
 
+# ============================
+# 캐릭터 별칭 매핑
+# ============================
+
+CHARACTER_ALIAS: Dict[str, str] = {
+    # 파랑
+    "눈설": "눈설탕",
+    "눈설탕": "눈설탕",
+    "눈": "눈설탕",
+
+    "캡아": "캡틴아이스",
+    "캡틴": "캡틴아이스",
+    "캡틴아이스": "캡틴아이스",
+    "캡": "캡틴아이스",
+
+    # 노랑
+    "스네": "스네이크",
+    "스네이크": "스네이크",
+    "스":"스네이크",
+
+    # 빨강
+    "인삼": "인삼",
+    "인":"인삼",
+    "비트": "비트",
+    "비":"비트",
+    "레판": "레판",
+    "레":"레판",
+    "뱀파": "뱀파",
+    "뱀":"뱀파",
+}
+
 
 # ============================
 # 파티 파싱
 # ============================
+
 def build_party_from_text(text: str) -> List[Character]:
     tokens = text.split()
     if len(tokens) % 2 != 0:
@@ -92,11 +128,19 @@ def build_party_from_text(text: str) -> List[Character]:
 
     party: List[Character] = []
     for i in range(0, len(tokens), 2):
-        name = tokens[i]
+        raw_name = tokens[i]
         cnt = int(tokens[i + 1])
 
+        # ✅ 별칭을 정식 이름으로 변환
+        if raw_name not in CHARACTER_ALIAS:
+            raise KeyError(
+                f"알 수 없는 캐릭터: {raw_name} / 사용 가능: {', '.join(CHARACTER_ALIAS.keys())}"
+            )
+
+        name = CHARACTER_ALIAS[raw_name]
+
         if name not in CHARACTER_DB:
-            raise KeyError(f"알 수 없는 캐릭터: {name} / 사용 가능: {', '.join(CHARACTER_DB.keys())}")
+            raise KeyError(f"DB에 없는 캐릭터: {name}")
 
         if cnt <= 0:
             continue
@@ -208,11 +252,89 @@ def compute_async_dps_ratio(
 
     return eff_sum / base_sum
 
+# ============================
+# ✅ 정규화 기반 "필요 총 에너지" 계산
+# - P = Σ(dmg / eff_mp) = total_dmg_per_mp_sum
+# - required_energy = boss_hp / P
+# ============================
+def compute_required_energy(boss_hp: float, total_dmg_per_mp_sum: float) -> float:
+    if boss_hp <= 0:
+        return 0.0
+    if total_dmg_per_mp_sum <= 0:
+        return float("inf")
+    return boss_hp / total_dmg_per_mp_sum
+
+
+# ============================
+# ✅ 보스-파티유형별 ENERGY_LIMIT(총 에너지 예산) 저장소
+# - Streamlit 세션에 저장해서 탭 간 공유
+# ============================
+def get_limits_store():
+    if "BOSS_LIMITS" not in st.session_state:
+        st.session_state["BOSS_LIMITS"] = {}  # {boss: {party_type: {"energy_limit": float, "ref_party": str, "threshold_cycles": int}}}
+    return st.session_state["BOSS_LIMITS"]
+
+
 
 # ============================
 # Streamlit UI
 # ============================
 st.set_page_config(page_title="CROB 파티 딜 계산", page_icon="🧮")
+
+from boss_limits_store import load_limits
+load_limits()  # ✅ 서버에 저장된 boss_limits.json을 읽어서 모든 접속자에게 동일 기준 적용
+
+# ✅ 관리자 모드 판별 (URL에 ?admin=1 붙이면 "관리자 로그인 UI"가 열림)
+params = st.query_params
+admin_flag = str(params.get("admin", "0")).strip().lower() in ["1", "true", "yes"]
+
+if "LAST_CALC_OPTS" not in st.session_state:
+    st.session_state["LAST_CALC_OPTS"] = {}
+
+# ✅ 추가: 탭3에서 고정으로 쓸 옵션
+if "PINNED_CALC_OPTS" not in st.session_state:
+    st.session_state["PINNED_CALC_OPTS"] = None
+
+# ✅ 관리자 인증 상태(세션별)
+if "ADMIN_AUTH" not in st.session_state:
+    st.session_state["ADMIN_AUTH"] = False
+
+ADMIN_PASSWORD = "0930"  # 요청한 비밀번호
+
+def admin_login_gate() -> bool:
+    """
+    - URL에 ?admin=1 이 있을 때만 로그인 UI 노출
+    - 비밀번호 맞으면 세션에 ADMIN_AUTH=True 저장
+    - 세션이 유지되는 동안 계속 관리자
+    """
+    if not admin_flag:
+        return False
+
+    # 이미 인증된 세션이면 통과
+    if st.session_state["ADMIN_AUTH"]:
+        return True
+
+    with st.sidebar:
+        st.markdown("### 🔒 관리자 로그인")
+        pw = st.text_input("비밀번호", type="password", key="admin_pw_input")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("로그인", key="admin_login_btn"):
+                if pw == ADMIN_PASSWORD:
+                    st.session_state["ADMIN_AUTH"] = True
+        with col2:
+            if st.button("로그아웃", key="admin_logout_btn"):
+                st.session_state["ADMIN_AUTH"] = False
+
+        if st.session_state["ADMIN_AUTH"]:
+            st.success("관리자 인증 완료")
+        else:
+            st.info("관리자 기능은 비밀번호가 필요합니다.")
+
+    return st.session_state["ADMIN_AUTH"]
+
+admin_mode = admin_login_gate()
+
 st.title("🧮 쿠오븐 레이드파티 기대 딜량 계산")
 st.markdown("<hr style='margin: 6px 0;'>", unsafe_allow_html=True)
 st.caption("입력 예: 비트 3 레판 1  |  이름과 수량을 공백으로 구분")
@@ -272,7 +394,7 @@ with tab1:
     with col1:
         common_damage_buff_pct = st.number_input(
             "공통 피해증가율(%) (ex : 유틸버프, 쿠키가주는피해량증가)",
-            min_value=0.0, max_value=1000.0, value=42.0, step=1.0
+            min_value=0.0, max_value=1000.0, value=30.0, step=1.0
         )
     with col2:
         stone_crit_buff_pct = st.number_input(
@@ -325,6 +447,15 @@ with tab1:
             )
             dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
 
+            st.session_state["LAST_CALC_OPTS"] = {
+                "weakness_colors": list(weakness_colors),
+                "weakness_bonus_by_color": dict(weakness_bonus_by_color),
+                "energy_decrease_by_color": dict(energy_decrease_by_color),
+                "common_damage_buff_pct": float(common_damage_buff_pct),
+                "stone_crit_buff_pct": float(stone_crit_buff_pct),
+            }
+            
+
             st.subheader("적용 요약")
             if weakness_bonus_by_color:
                 pretty = ", ".join([f"{k}(+30% 고정 + {v*100:+.0f}%)" for k, v in weakness_bonus_by_color.items()])
@@ -366,6 +497,27 @@ with tab1:
                     effective_boss_hp *= (1.0 + boss_hp_inc_pct / 100.0)
                 if party5_on:
                     effective_boss_hp *= 5.0
+
+                # ✅ 정규화 클리어 판정 박스(탭1)
+
+                BOSS_LIST = ["두억시니", "사마귀"]
+                
+                selected_boss = st.selectbox(
+                    "보스 선택",
+                    BOSS_LIST,
+                    index=0,   # ✅ 두억시니가 기본
+                    key="tab1_boss_select"
+)
+                render_clear_judge_box(
+                    boss=selected_boss,
+                    boss_hp=effective_boss_hp,
+                    P=total_dmg_per_mp_sum,
+                    party=party,                 # ✅ 추가
+                    key_prefix="tab1_judge",
+                    show_match_info=True,        # 필요하면 False로 숨김
+                    k_profiles=5,                # 상위 몇 개 프로필로 가중평균할지
+                    weight_power=1.0,            # 1.0 기본, 2.0이면 더 “가까운 기준” 위주
+                )
 
                 # ✅ 기존(에너지 미반영) 사이클
                 cycles = math.ceil(effective_boss_hp / total_dmg) if total_dmg > 0 else 0
@@ -432,7 +584,7 @@ with tab2:
     with col1:
         common_damage_buff_pct_cmp = st.number_input(
             "공통 피해증가율(%) (ex : 유틸버프, 쿠주피)",
-            min_value=0.0, max_value=1000.0, value=42.0, step=1.0,
+            min_value=0.0, max_value=1000.0, value=30.0, step=1.0,
             key="cmp_common"
         )
     with col2:
@@ -464,8 +616,26 @@ with tab2:
             min_value=0.0, max_value=1000.0, value=0.0, step=1.0,
             key="boss_hp_inc_pct_cmp"
         )
+        
+    BOSS_LIST = ["두억시니", "사마귀"]
+    selected_boss_cmp = st.selectbox(
+        "보스 선택(비교 기준)",
+        BOSS_LIST,
+        index=0,   # ✅ 두억시니 기본
+        key="tab2_boss_select"
+    )
 
+    
     if st.button("파티 비교 실행"):
+        
+        st.session_state["LAST_CALC_OPTS"] = {
+            "weakness_colors": list(weakness_colors_cmp),
+            "weakness_bonus_by_color": dict(weakness_bonus_by_color_cmp),
+            "energy_decrease_by_color": dict(energy_decrease_by_color_cmp),
+            "common_damage_buff_pct": float(common_damage_buff_pct_cmp),
+            "stone_crit_buff_pct": float(stone_crit_buff_pct_cmp),
+        }
+
         rows = []
         for line in party_texts.splitlines():
             if not line.strip():
@@ -496,12 +666,24 @@ with tab2:
                 if party5_on_cmp:
                     effective_boss_hp_cmp *= 5.0
 
+
+                judge_cols = judge_clear_for_table(
+                    boss=selected_boss_cmp,          # ✅ 여기
+                    boss_hp=effective_boss_hp_cmp,
+                    P=total_dmg_per_mp_sum,
+                    party=party,
+                    k_profiles=5,
+                    weight_power=1.0,
+                )
+                
                 cycles = math.ceil(effective_boss_hp_cmp / total_dmg) if total_dmg > 0 else 0
                 effective_total_dmg_async = total_dmg * dps_ratio_async
                 cycles_with_energy_async = math.ceil(effective_boss_hp_cmp / effective_total_dmg_async) if effective_total_dmg_async > 0 else 0
-
+                
+                
                 rows.append({
                     "파티 구성": line,
+                    **judge_cols,
                     "약점 적용": ", ".join([f"{k}(+30%+{v*100:+.0f}%)" for k, v in weakness_bonus_by_color_cmp.items()]) or "-",
                     "(비동기합산) 딜감소율%": float(f"{dps_drop_async_pct:.2f}"),
                     "1사이클 총 딜량": int(total_dmg),
@@ -510,7 +692,7 @@ with tab2:
                     "(에너지감소 반영) 필요 사이클 수": cycles_with_energy_async,
                     "총 스킬에너지 소모(1사이클)": int(total_mp),
                     "총 스킬에너지 소모(처치)": int(cycles * total_mp),
-                    "(에너지감소 반영) 총 스킬에너지 소모(처치)": int(cycles_with_energy_async * total_mp),
+                    "(에너지감소 반영) 총 스킬에너지 소모(처치)": int(cycles_with_energy_async * total_mp),                   
                 })
 
             except Exception as e:
@@ -519,8 +701,12 @@ with tab2:
         st.dataframe(rows, use_container_width=True)
 
 with tab3:
-    render_threshold_tab()
-
+    render_threshold_tab(
+        COLOR_OPTIONS=COLOR_OPTIONS,
+        build_party_from_text=build_party_from_text,
+        calculate_party=calculate_party,
+        admin_mode=admin_mode,   # ✅ 추가
+    )
 
 st.markdown("---")
 st.caption("제작 : 카카오톡 오픈채팅방 쿠키런 only 레이드런방 - 오늘컨별로네")
