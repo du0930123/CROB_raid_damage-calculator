@@ -487,10 +487,7 @@ with tab1:
                 st.write("- 에너지획득량감소(색별): **없음**")
             
             if use_game_speed_model:
-                st.write(
-                    f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** "
-                    f"(보스별 감쇠계수 {boss_speed_alpha:.2f} 적용)"
-                )
+                st.write(f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** (보스별 보정 적용)")
             else:
                 st.write("- 게임속도 증가율: **미적용**")
 
@@ -551,7 +548,7 @@ with tab1:
                     weakness_bonus_by_color=weakness_bonus_by_color,
                     energy_decrease_by_color=energy_decrease_by_color,
                     game_speed_buff=game_speed_buff_pct / 100.0,
-                    game_speed_alpha=boss_speed_alpha_cmp if use_game_speed_model_cmp else 0.0,
+                    game_speed_alpha=boss_speed_alpha if use_game_speed_model_cmp else 0.0,
                 )
                 P_effective = total_dmg_per_mp_sum * dps_ratio_async
                 dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
@@ -754,6 +751,8 @@ with tab2:
                     energy_decrease_by_color=energy_decrease_by_color_cmp,
                 )
 
+                boss_speed_alpha_cmp = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss_cmp, DEFAULT_GAME_SPEED_ALPHA)
+
                 dps_ratio_async = compute_async_dps_ratio(
                     party=party,
                     common_damage_buff=common_damage_buff_pct_cmp / 100.0,
@@ -761,7 +760,7 @@ with tab2:
                     weakness_bonus_by_color=weakness_bonus_by_color_cmp,
                     energy_decrease_by_color=energy_decrease_by_color_cmp,
                     game_speed_buff=game_speed_buff_pct_cmp / 100.0,
-                    game_speed_alpha=boss_speed_alpha if use_game_speed_model else 0.0,
+                    game_speed_alpha=boss_speed_alpha_cmp if use_game_speed_model else 0.0,
                 )
                 P_effective_cmp = total_dmg_per_mp_sum * dps_ratio_async
                 dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
