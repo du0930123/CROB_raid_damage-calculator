@@ -548,12 +548,12 @@ with tab1:
                 render_clear_judge_box(
                     boss=selected_boss,
                     boss_hp=effective_boss_hp,
-                    P=total_dmg_per_mp_sum,
-                    party=party,                 # ✅ 추가
+                    P=P_effective,
+                    party=party,
                     key_prefix="tab1_judge",
-                    show_match_info=True,        # 필요하면 False로 숨김
-                    k_profiles=5,                # 상위 몇 개 프로필로 가중평균할지
-                    weight_power=1.0,            # 1.0 기본, 2.0이면 더 “가까운 기준” 위주
+                    show_match_info=True,
+                    k_profiles=5,
+                    weight_power=1.0,
                 )
 
                 # ✅ 기존(에너지 미반영) 사이클
@@ -716,6 +716,7 @@ with tab2:
                     game_speed_buff=game_speed_buff_pct_cmp / 100.0,
                     game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model_cmp else 0.0,
                 )
+                P_effective_cmp = total_dmg_per_mp_sum * dps_ratio_async
                 dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
 
                 effective_boss_hp_cmp = boss_hp_cmp
@@ -726,9 +727,9 @@ with tab2:
 
 
                 judge_cols = judge_clear_for_table(
-                    boss=selected_boss_cmp,          # ✅ 여기
+                    boss=selected_boss_cmp,
                     boss_hp=effective_boss_hp_cmp,
-                    P=total_dmg_per_mp_sum,
+                    P=P_effective_cmp,
                     party=party,
                     k_profiles=5,
                     weight_power=1.0,
