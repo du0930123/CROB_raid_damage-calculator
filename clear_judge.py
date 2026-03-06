@@ -171,7 +171,8 @@ def render_clear_judge_box(
     show_match_info: bool = True,
     k_profiles: int = 5,
     weight_power: float = 1.0,
-    title: str = "정규화 클리어 판정",   # ✅ 추가
+    title: str = "정규화 클리어 판정",
+    show_notice: bool = True,   # ✅ 추가
 ):
     """
     party_type 선택 없음.
@@ -194,27 +195,28 @@ def render_clear_judge_box(
 
     st.write(f"- 필요 총 에너지(required_energy = boss_hp / P): **{required_energy:,.0f}**")
     st.write(f"- 기준 정규화 한계(ref_required_norm, 가중평균): **{ref_required_norm:,.0f}**")
-    st.markdown(
-    """
-    <div style="
-        margin-top: 12px;
-        margin-bottom: 12px;
-        padding: 18px 20px;
-        border-radius: 12px;
-        background-color: #fff3cd;
-        border: 2px solid #ffcc00;
-        color: #7a4b00;
-        font-size: 26px;
-        font-weight: 800;
-        text-align: center;
-        line-height: 1.5;
-    ">
-        부족 뜬다고 못 깨는 거 아님<br>
-        데이터 많이 부족하고, 겜속이나 빌드에 따라 달라질 수 있음
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    if show_notice:
+        st.markdown(
+            """
+            <div style="
+                margin-top: 12px;
+                margin-bottom: 12px;
+                padding: 18px 20px;
+                border-radius: 12px;
+                background-color: #fff3cd;
+                border: 2px solid #ffcc00;
+                color: #7a4b00;
+                font-size: 26px;
+                font-weight: 800;
+                text-align: center;
+                line-height: 1.5;
+            ">
+                부족 뜬다고 못 깨는 거 아님<br>
+                데이터 많이 부족하고, 겜속이나 빌드에 따라 달라질 수 있음
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
     
 
     if show_match_info and used:
