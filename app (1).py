@@ -564,11 +564,11 @@ with tab1:
                 cycles_with_energy_async = math.ceil(effective_boss_hp / effective_total_dmg_async) if effective_total_dmg_async > 0 else 0
 
                 st.write(f"- 필요 파티 사이클: **{cycles} 회**")
-                st.write(f"- (에너지감소 반영) 필요 파티 사이클: **{cycles_with_energy_async} 회**")
+                st.write(f"- (에너지감소, 겜속 반영) 필요 파티 사이클: **{cycles_with_energy_async} 회**")
                 st.caption("※ 에너지감소 반영 (Σ(딜/요구 스킬젬량)) 기반으로 '시간당 딜 감소'를 반영해 보스 처치 사이클을 재산정한 값")
 
                 st.write(f"- 예상 총 스킬에너지 소모: **{cycles * total_mp:,}**")
-                st.write(f"- (에너지감소 반영) 예상 총 스킬에너지 소모: **{cycles_with_energy_async * total_mp:,}**")
+                st.write(f"- (에너지감소, 겜속 반영) 예상 총 스킬에너지 소모: **{cycles_with_energy_async * total_mp:,}**")
 
         except Exception as e:
             st.error(str(e))
@@ -748,10 +748,10 @@ with tab2:
                     "1사이클 총 딜량": int(total_dmg),
                     "총 스킬에너지당 딜량(Σ)": float(f"{total_dmg_per_mp_sum:.2f}"),
                     "필요 사이클 수": cycles,
-                    "(에너지감소 반영) 필요 사이클 수": cycles_with_energy_async,
+                    "(에너지감소, 겜속 반영) 필요 사이클 수": cycles_with_energy_async,
                     "총 스킬에너지 소모(1사이클)": int(total_mp),
                     "총 스킬에너지 소모(처치)": int(cycles * total_mp),
-                    "(에너지감소 반영) 총 스킬에너지 소모(처치)": int(cycles_with_energy_async * total_mp),                   
+                    "(에너지감소, 겜속 반영) 총 스킬에너지 소모(처치)": int(cycles_with_energy_async * total_mp),                   
                 })
 
             except Exception as e:
