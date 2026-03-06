@@ -560,6 +560,7 @@ with tab1:
                 st.write(f"- 필요 총 에너지(required_energy = boss_hp / P): **{required_energy_base:,.0f}**")
                 st.write(f"- 기준 정규화 한계(ref_required_norm, 가중평균): **{ref_required_norm:,.0f}**")
 
+                # 1) 겜속 미반영 판정은 항상 표시
                 render_clear_judge_box(
                     boss=selected_boss,
                     boss_hp=effective_boss_hp,
@@ -570,22 +571,24 @@ with tab1:
                     k_profiles=5,
                     weight_power=1.0,
                     title="정규화 클리어 판정 (겜속 미반영)",
-                    show_notice=True,   # ✅ 여기만 True
+                    show_notice=True,
                 )
                 
-                # 2) 에너지감소 + 겜속 반영 판정
-                render_clear_judge_box(
-                    boss=selected_boss,
-                    boss_hp=effective_boss_hp,
-                    P=P_effective,
-                    party=party,
-                    key_prefix="tab1_judge_speed",
-                    show_match_info=True,
-                    k_profiles=5,
-                    weight_power=1.0,
-                    title="정규화 클리어 판정 (에너지감소, 겜속 반영)",
-                    show_notice=False,   # ✅ 두 번째는 False
-                )
+                # 2) 겜속 체크했을 때만 반영 판정 표시
+                if use_game_speed_model:
+                    st.markdown("---")
+                    render_clear_judge_box(
+                        boss=selected_boss,
+                        boss_hp=effective_boss_hp,
+                        P=P_effective,
+                        party=party,
+                        key_prefix="tab1_judge_speed",
+                        show_match_info=True,
+                        k_profiles=5,
+                        weight_power=1.0,
+                        title="정규화 클리어 판정 (에너지감소, 겜속 반영)",
+                        show_notice=False,
+                    )
                 # ✅ 기존(에너지 미반영) 사이클
                 cycles = math.ceil(effective_boss_hp / total_dmg) if total_dmg > 0 else 0
 
@@ -594,12 +597,14 @@ with tab1:
                 cycles_with_energy_async = math.ceil(effective_boss_hp / effective_total_dmg_async) if effective_total_dmg_async > 0 else 0
 
                 st.write(f"- 필요 파티 사이클: **{cycles} 회**")
-                st.write(f"- (에너지감소, 겜속 반영) 필요 파티 사이클: **{cycles_with_energy_async} 회**")
-                st.caption("※ 에너지감소 반영 (Σ(딜/요구 스킬젬량)) 기반으로 '시간당 딜 감소'를 반영해 보스 처치 사이클을 재산정한 값")
-
+                if use_game_speed_model:
+                    st.write(f"- (에너지감소, 겜속 반영) 필요 파티 사이클: **{cycles_with_energy_async} 회**")
+                    st.caption("※ 에너지감소 반영 (Σ(딜/요구 스킬젬량)) 기반으로 시간당 딜 감소를 반영해 보스 처치 사이클을 재산정한 값")
+                
                 st.write(f"- 예상 총 스킬에너지 소모: **{cycles * total_mp:,}**")
-                st.write(f"- (에너지감소, 겜속 반영) 예상 총 스킬에너지 소모: **{cycles_with_energy_async * total_mp:,}**")
-
+                if use_game_speed_model:
+                    st.write(f"- (에너지감소, 겜속 반영) 예상 총 스킬에너지 소모: **{cycles_with_energy_async * total_mp:,}**")
+    
         except Exception as e:
             st.error(str(e))
 
