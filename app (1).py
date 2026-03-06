@@ -555,7 +555,8 @@ with tab1:
                     show_match_info=False,
                     k_profiles=5,
                     weight_power=1.0,
-                    title="정규화 클리어 판정 (겜속 미반영)"
+                    title="정규화 클리어 판정 (겜속 미반영)",
+                    show_notice=True,   # ✅ 여기만 True
                 )
                 
                 # 2) 에너지감소 + 겜속 반영 판정
@@ -568,9 +569,9 @@ with tab1:
                     show_match_info=True,
                     k_profiles=5,
                     weight_power=1.0,
-                    title="정규화 클리어 판정 (에너지감소, 겜속 반영)"
+                    title="정규화 클리어 판정 (에너지감소, 겜속 반영)",
+                    show_notice=False,   # ✅ 두 번째는 False
                 )
-
                 # ✅ 기존(에너지 미반영) 사이클
                 cycles = math.ceil(effective_boss_hp / total_dmg) if total_dmg > 0 else 0
 
