@@ -504,7 +504,7 @@ with tab1:
                 game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model else 0.0,
             )
         
-        dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
+            dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
             # ✅ 추가 출력(비동기합산 딜 감소율)
             st.write(f"- (비동기합산) 딜량 감소율: **{dps_drop_async_pct:.2f}%**")
 
