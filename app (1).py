@@ -491,17 +491,6 @@ with tab1:
             else:
                 st.write("- 게임속도 증가율: **미적용**")
 
-            dps_ratio_async = compute_async_dps_ratio(
-                party=party,
-                common_damage_buff=common_damage_buff_pct / 100.0,
-                stone_crit_buff=stone_crit_buff_pct / 100.0,
-                weakness_bonus_by_color=weakness_bonus_by_color,
-                energy_decrease_by_color=energy_decrease_by_color,
-                game_speed_buff=game_speed_buff_pct / 100.0,
-                game_speed_alpha=boss_speed_alpha if use_game_speed_model else 0.0,
-            )
-        
-            dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
             # ✅ 추가 출력(비동기합산 딜 감소율)
             st.write(f"- 공통 피해증가율: **{common_damage_buff_pct:.0f}%** (전원 적용)")
             st.write(f"- 캡틴아이스 피해증가: **{party_buff*100:.2f}%** (최대 1회)")
