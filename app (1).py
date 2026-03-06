@@ -545,15 +545,30 @@ with tab1:
                     index=0,   # ✅ 두억시니가 기본
                     key="tab1_boss_select"
 )
+                # 1) 겜속 미반영 / 원래 판정
+                render_clear_judge_box(
+                    boss=selected_boss,
+                    boss_hp=effective_boss_hp,
+                    P=total_dmg_per_mp_sum,
+                    party=party,
+                    key_prefix="tab1_judge_base",
+                    show_match_info=False,
+                    k_profiles=5,
+                    weight_power=1.0,
+                    title="정규화 클리어 판정 (겜속 미반영)"
+                )
+                
+                # 2) 에너지감소 + 겜속 반영 판정
                 render_clear_judge_box(
                     boss=selected_boss,
                     boss_hp=effective_boss_hp,
                     P=P_effective,
                     party=party,
-                    key_prefix="tab1_judge",
+                    key_prefix="tab1_judge_speed",
                     show_match_info=True,
                     k_profiles=5,
                     weight_power=1.0,
+                    title="정규화 클리어 판정 (에너지감소, 겜속 반영)"
                 )
 
                 # ✅ 기존(에너지 미반영) 사이클
