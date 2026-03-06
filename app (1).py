@@ -502,7 +502,7 @@ with tab1:
             else:
                 st.write("- 에너지획득량감소(색별): **없음**")
 
-            if use_game_speed_model:
+            if show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
                 st.write(
                     f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** "
                     f"(감쇠계수 {GAME_SPEED_ALPHA_DEFAULT:.2f} 적용)"
@@ -574,8 +574,8 @@ with tab1:
                     show_notice=True,
                 )
                 
-                # 2) 겜속 체크했을 때만 반영 판정 표시
-                if use_game_speed_model:
+                # 2) 에너지감소 또는 겜속이 있을 때만 반영 판정 표시
+                if show_async_block:
                     st.markdown("---")
                     render_clear_judge_box(
                         boss=selected_boss,
@@ -595,6 +595,7 @@ with tab1:
                 # ✅ 추가: (비동기합산 딜 감소율 반영) 사이클
                 effective_total_dmg_async = total_dmg * dps_ratio_async
                 cycles_with_energy_async = math.ceil(effective_boss_hp / effective_total_dmg_async) if effective_total_dmg_async > 0 else 0
+                show_async_block = use_game_speed_model or bool(energy_decrease_by_color)
 
                 st.write(f"- 필요 파티 사이클: **{cycles} 회**")
                 if use_game_speed_model:
