@@ -546,6 +546,16 @@ with tab1:
                     key="tab1_boss_select"
 )
                 # 1) 겜속 미반영 / 원래 판정
+                required_energy_base = effective_boss_hp / total_dmg_per_mp_sum
+                ref_required_norm, _, _ = compute_energy_limit_weighted(
+                    boss=selected_boss,
+                    party=party,
+                    k=5,
+                    power=1.0,
+                )
+                st.write(f"- 필요 총 에너지(required_energy = boss_hp / P): **{required_energy_base:,.0f}**")
+                st.write(f"- 기준 정규화 한계(ref_required_norm, 가중평균): **{ref_required_norm:,.0f}**")
+
                 render_clear_judge_box(
                     boss=selected_boss,
                     boss_hp=effective_boss_hp,
