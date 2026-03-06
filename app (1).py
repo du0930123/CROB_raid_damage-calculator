@@ -11,17 +11,12 @@ from tab_threshold import render_threshold_tab
 from boss_limits_store import load_limits
 load_limits()
 
-    
+from boss_config import GAME_SPEED_ALPHA_BY_BOSS, DEFAULT_GAME_SPEED_ALPHA    
 # ============================
 # 고정 규칙
 # ============================
 COLOR_MATCH_BONUS = 0.30  # 약점으로 선택된 색 스킬은 항상 +30% (자동 적용)
 COLOR_OPTIONS = ["빨강", "노랑", "파랑"]
-
-# ============================
-# 게임속도 실험 옵션
-# ============================
-GAME_SPEED_ALPHA_DEFAULT = 0.4   # 감쇠계수 (0.0이면 사실상 미적용)
 
 # ============================
 # 데이터 구조
@@ -467,18 +462,7 @@ with tab1:
                 energy_decrease_by_color=energy_decrease_by_color,
             )
 
-            # ✅ 추가: 비동기합산 기반 딜 비율/감소율
-            dps_ratio_async = compute_async_dps_ratio(
-                party=party,
-                common_damage_buff=common_damage_buff_pct / 100.0,
-                stone_crit_buff=stone_crit_buff_pct / 100.0,
-                weakness_bonus_by_color=weakness_bonus_by_color,
-                energy_decrease_by_color=energy_decrease_by_color,
-                game_speed_buff=game_speed_buff_pct / 100.0,
-                game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model else 0.0,
-            )
-            P_effective = total_dmg_per_mp_sum * dps_ratio_async
-            dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
+
 
             st.session_state["LAST_CALC_OPTS"] = {
                 "weakness_colors": list(weakness_colors),
@@ -505,7 +489,7 @@ with tab1:
             if use_game_speed_model:
                 st.write(
                     f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** "
-                    f"(감쇠계수 {GAME_SPEED_ALPHA_DEFAULT:.2f} 적용)"
+                    f"(보스별 감쇠계수 {boss_speed_alpha:.2f} 적용)"
                 )
             else:
                 st.write("- 게임속도 증가율: **미적용**")
@@ -547,6 +531,19 @@ with tab1:
                     index=0,
                     key="tab1_boss_select"
                 )
+                boss_speed_alpha = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss, DEFAULT_GAME_SPEED_ALPHA)
+
+                dps_ratio_async = compute_async_dps_ratio(
+                    party=party,
+                    common_damage_buff=common_damage_buff_pct / 100.0,
+                    stone_crit_buff=stone_crit_buff_pct / 100.0,
+                    weakness_bonus_by_color=weakness_bonus_by_color,
+                    energy_decrease_by_color=energy_decrease_by_color,
+                    game_speed_buff=game_speed_buff_pct / 100.0,
+                    game_speed_alpha=boss_speed_alpha_cmp if use_game_speed_model_cmp else 0.0,
+                )
+                P_effective = total_dmg_per_mp_sum * dps_ratio_async
+                dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
             
                 # 공통 정보
                 required_energy_base = effective_boss_hp / total_dmg_per_mp_sum
@@ -718,6 +715,7 @@ with tab2:
         index=0,   # ✅ 두억시니 기본
         key="tab2_boss_select"
     )
+    boss_speed_alpha_cmp = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss_cmp, DEFAULT_GAME_SPEED_ALPHA)
 
     
     if st.button("파티 비교 실행"):
@@ -752,7 +750,7 @@ with tab2:
                     weakness_bonus_by_color=weakness_bonus_by_color_cmp,
                     energy_decrease_by_color=energy_decrease_by_color_cmp,
                     game_speed_buff=game_speed_buff_pct_cmp / 100.0,
-                    game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model_cmp else 0.0,
+                    game_speed_alpha=boss_speed_alpha if use_game_speed_model else 0.0,
                 )
                 P_effective_cmp = total_dmg_per_mp_sum * dps_ratio_async
                 dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
