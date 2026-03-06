@@ -14,6 +14,10 @@ load_limits()
 COLOR_MATCH_BONUS = 0.30  # 약점으로 선택된 색 스킬은 항상 +30% (자동 적용)
 COLOR_OPTIONS = ["빨강", "노랑", "파랑"]
 
+# ============================
+# 게임속도 실험 옵션
+# ============================
+GAME_SPEED_ALPHA_DEFAULT = 0.45   # 감쇠계수 (0.0이면 사실상 미적용)
 
 # ============================
 # 데이터 구조
@@ -222,7 +226,10 @@ def compute_async_dps_ratio(
     stone_crit_buff: float,
     weakness_bonus_by_color: Dict[str, float],
     energy_decrease_by_color: Dict[str, float],
+    game_speed_buff: float = 0.0,         # ✅ 추가
+    game_speed_alpha: float = 0.0,        # ✅ 추가
 ) -> float:
+    
     party_damage_buff_total = max((c.party_damage_buff for c in party), default=0.0)
     lepain_crit_buff_total = max((c.lepain_crit_buff for c in party), default=0.0)
 
@@ -250,7 +257,8 @@ def compute_async_dps_ratio(
     if base_sum <= 0:
         return 1.0
 
-    return eff_sum / base_sum
+    speed_mult = 1.0 + game_speed_alpha * game_speed_buff
+    return (eff_sum * speed_mult) / base_sum
 
 # ============================
 # ✅ 정규화 기반 "필요 총 에너지" 계산
@@ -370,6 +378,24 @@ with tab1:
     weakness_bonus_by_color: Dict[str, float] = {}
     energy_decrease_by_color: Dict[str, float] = {}
 
+    # ✅ 게임속도 실험 옵션
+    use_game_speed_model = st.checkbox(
+        "게임속도 보정 적용(실험)",
+        value=False,
+        key="tab1_use_game_speed_model"
+    )
+    
+    game_speed_buff_pct = 0.0
+    if use_game_speed_model:
+        game_speed_buff_pct = st.number_input(
+            "돌옵션 : 게임속도 증가율(%)",
+            min_value=0.0,
+            max_value=300.0,
+            value=0.0,
+            step=1.0,
+            key="tab1_game_speed_buff_pct"
+        )
+
     if weakness_colors:
         st.markdown("#### 약점 색별 조건부 피해증가율(%) 입력")
         for wc in weakness_colors:
@@ -443,7 +469,9 @@ with tab1:
                 common_damage_buff=common_damage_buff_pct / 100.0,
                 stone_crit_buff=stone_crit_buff_pct / 100.0,
                 weakness_bonus_by_color=weakness_bonus_by_color,
-                energy_decrease_by_color=energy_decrease_by_color
+                energy_decrease_by_color=energy_decrease_by_color,
+                game_speed_buff=game_speed_buff_pct / 100.0,
+                game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model else 0.0,
             )
             dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
 
@@ -468,6 +496,14 @@ with tab1:
                 st.write(f"- 에너지획득량감소(색별): **{epretty}**")
             else:
                 st.write("- 에너지획득량감소(색별): **없음**")
+
+            if use_game_speed_model:
+                st.write(
+                    f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** "
+                    f"(감쇠계수 {GAME_SPEED_ALPHA_DEFAULT:.2f} 적용)"
+                )
+            else:
+                st.write("- 게임속도 증가율: **미적용**")
 
             # ✅ 추가 출력(비동기합산 딜 감소율)
             st.write(f"- (비동기합산) 딜량 감소율: **{dps_drop_async_pct:.2f}%**")
@@ -560,6 +596,25 @@ with tab2:
 
     weakness_bonus_by_color_cmp: Dict[str, float] = {}
     energy_decrease_by_color_cmp: Dict[str, float] = {}
+
+    # ✅ 비교용 게임속도 실험 옵션
+    use_game_speed_model_cmp = st.checkbox(
+        "게임속도 보정 적용(실험)",
+        value=False,
+        key="tab2_use_game_speed_model"
+    )
+    
+    game_speed_buff_pct_cmp = 0.0
+    if use_game_speed_model_cmp:
+        game_speed_buff_pct_cmp = st.number_input(
+            "돌옵션 : 게임속도 증가율(%)",
+            min_value=0.0,
+            max_value=300.0,
+            value=0.0,
+            step=1.0,
+            key="tab2_game_speed_buff_pct"
+        )
+
 
     if weakness_colors_cmp:
         st.markdown("#### (비교) 약점 색별 조건부 피해증가율(%) 입력")
@@ -656,7 +711,9 @@ with tab2:
                     common_damage_buff=common_damage_buff_pct_cmp / 100.0,
                     stone_crit_buff=stone_crit_buff_pct_cmp / 100.0,
                     weakness_bonus_by_color=weakness_bonus_by_color_cmp,
-                    energy_decrease_by_color=energy_decrease_by_color_cmp
+                    energy_decrease_by_color=energy_decrease_by_color_cmp,
+                    game_speed_buff=game_speed_buff_pct_cmp / 100.0,
+                    game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model_cmp else 0.0,
                 )
                 dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
 
