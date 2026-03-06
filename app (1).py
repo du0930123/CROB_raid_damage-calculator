@@ -503,8 +503,6 @@ with tab1:
         
             dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
             # ✅ 추가 출력(비동기합산 딜 감소율)
-            st.write(f"- (비동기합산) 딜량 감소율: **{dps_drop_async_pct:.2f}%**")
-
             st.write(f"- 공통 피해증가율: **{common_damage_buff_pct:.0f}%** (전원 적용)")
             st.write(f"- 캡틴아이스 피해증가: **{party_buff*100:.2f}%** (최대 1회)")
             st.write(f"- 레판 치명타 추가딜: **{lepain_buff*100:.2f}%** (최대 1회)")
@@ -551,7 +549,9 @@ with tab1:
                     game_speed_alpha=boss_speed_alpha if use_game_speed_model else 0.0,
                 )
                 P_effective = total_dmg_per_mp_sum * dps_ratio_async
+                
                 dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
+                st.write(f"- (비동기합산) 딜량 감소율: **{dps_drop_async_pct:.2f}%**")
             
                 # 공통 정보
                 required_energy_base = effective_boss_hp / total_dmg_per_mp_sum
