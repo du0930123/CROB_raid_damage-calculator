@@ -498,7 +498,7 @@ with tab1:
                 weakness_bonus_by_color=weakness_bonus_by_color,
                 energy_decrease_by_color=energy_decrease_by_color,
                 game_speed_buff=game_speed_buff_pct / 100.0,
-                game_speed_alpha=GAME_SPEED_ALPHA_DEFAULT if use_game_speed_model else 0.0,
+                game_speed_alpha=boss_speed_alpha if use_game_speed_model else 0.0,
             )
         
             dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
