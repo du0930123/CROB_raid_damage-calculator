@@ -227,9 +227,9 @@ def render_clear_judge_box(
                 )
 
     if clear_ok:
-        st.success(f"판정: **클리어 가능** (여유율 **{margin_pct:.1f}%**)")
+        st.success(f"판정: **클리어 가능** ( **{margin_pct:.1f}%** 여유)")
     else:
-        st.error(f"판정: **클리어 어려움** (부족 **{abs(margin_pct):.1f}%**)")
+        st.error(f"판정: **클리어 어려움** ( **{abs(margin_pct):.1f}%** 부족)")
 
 
 def judge_clear_for_table(
