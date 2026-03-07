@@ -539,8 +539,8 @@ with tab1:
                 )
                 P_effective = total_dmg_per_mp_sum * dps_ratio_async
                 
-                dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
-                st.write(f"- (비동기합산) 딜량 감소율: **{dps_drop_async_pct:.2f}%**")
+                dps_drop_async_pct = (dps_ratio_async - 1.0) * 100.0
+                st.write(f"- (비동기합산) 실효 딜 변화율 : **{dps_drop_async_pct:+.2f}%**")
             
                 # 공통 정보
                 required_energy_base = effective_boss_hp / total_dmg_per_mp_sum
@@ -752,7 +752,7 @@ with tab2:
                     game_speed_alpha=boss_speed_alpha_cmp if use_game_speed_model_cmp else 0.0,
                 )
                 P_effective_cmp = total_dmg_per_mp_sum * dps_ratio_async
-                dps_drop_async_pct = (1.0 - dps_ratio_async) * 100.0
+                dps_drop_async_pct = (dps_ratio_async - 1.0) * 100.0
 
                 effective_boss_hp_cmp = boss_hp_cmp
                 if boss_hp_inc_on_cmp:
@@ -802,7 +802,7 @@ with tab2:
                     "반영 필요총에너지": judge_cols_speed.get("필요총에너지(boss_hp/P)"),
                 
                     "약점 적용": ", ".join([f"{k}(+30%+{v*100:+.0f}%)" for k, v in weakness_bonus_by_color_cmp.items()]) or "-",
-                    "(비동기합산) 딜감소율%": float(f"{dps_drop_async_pct:.2f}"),
+                    "(비동기합산) 실효 딜 변화율%": float(f"{dps_drop_async_pct:+.2f}"),
                     "1사이클 총 딜량": int(total_dmg),
                     "총 스킬에너지당 딜량(Σ)": float(f"{total_dmg_per_mp_sum:.2f}"),
                     "필요 사이클 수": cycles,
