@@ -137,6 +137,12 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
         st.caption("관리자가 기준 파티/경계 사이클을 저장하면 boss_limits.json에 반영되어 모든 접속자에게 동일하게 적용돼요.")
         st.caption("※ 저장은 party_type을 '분류로 쓰지 않고', 보스별 profiles 풀에 누적 저장됩니다. (판정 시 자동 거리/가중치로 사용)")
 
+        calc_opts = st.session_state.get("LAST_CALC_OPTS", {})
+        common_damage_buff_pct = float(calc_opts.get("common_damage_buff_pct", 0.0))
+        stone_crit_buff_pct = float(calc_opts.get("stone_crit_buff_pct", 0.0))
+        weakness_bonus_by_color = dict(calc_opts.get("weakness_bonus_by_color", {}))
+        energy_decrease_by_color = dict(calc_opts.get("energy_decrease_by_color", {}))
+
         # 기준 파티 기본값(라벨에 따라 추천만)
         default_party = {
             "빨강(주로 비트 구성)": "비트 1 레판 4",
