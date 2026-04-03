@@ -209,8 +209,8 @@ def render_clear_judge_box(
                 text-align: center;
                 line-height: 1.5;
             ">
-                부족 뜬다고 못 깨는 거 아님<br>
-                데이터 많이 부족하고, 겜속이나 빌드에 따라 달라질 수 있음
+                겜속, 빌드에 따라 실제 클리어 여부 달라짐<br>
+                노랑은 여유로 떠도 클리어 힘들 수 있음
             </div>
             """,
             unsafe_allow_html=True
