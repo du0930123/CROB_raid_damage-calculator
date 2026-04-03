@@ -39,6 +39,24 @@
         },
         "ref_weakness_bonus_by_color": {},
         "threshold_cycles": 102
+      },
+      {
+        "boss_hp_est": 15485570849.999998,
+        "label": "파랑(눈설탕, 캡아 구성)",
+        "ref_P": 504417.6841216216,
+        "ref_common_damage_buff_pct": 0.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_party": "눈 5 캡 1",
+        "ref_required_norm": 30699.896806683384,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 188848424.99999997,
+        "ref_total_mp": 2250,
+        "ref_vec": {
+          "눈설탕": 0.8222222222222222,
+          "캡틴아이스": 0.17777777777777778
+        },
+        "ref_weakness_bonus_by_color": {},
+        "threshold_cycles": 82
       }
     ]
   },
