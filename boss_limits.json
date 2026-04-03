@@ -57,6 +57,25 @@
         },
         "ref_weakness_bonus_by_color": {},
         "threshold_cycles": 82
+      },
+      {
+        "boss_hp_est": 15574968370.5,
+        "label": "빨강(주로 비트 구성)",
+        "ref_P": 505680.79125,
+        "ref_common_damage_buff_pct": 0.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_party": "비 4 캡 1 레 1",
+        "ref_required_norm": 30800.0,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 202272316.5,
+        "ref_total_mp": 2400,
+        "ref_vec": {
+          "레판": 0.16666666666666666,
+          "비트": 0.6666666666666666,
+          "캡틴아이스": 0.16666666666666666
+        },
+        "ref_weakness_bonus_by_color": {},
+        "threshold_cycles": 77
       }
     ]
   },
