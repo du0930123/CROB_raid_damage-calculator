@@ -518,7 +518,7 @@ with tab1:
                 if party5_on:
                     effective_boss_hp *= 5.0
             
-                BOSS_LIST = ["두억시니", "사마귀"]
+                BOSS_LIST = ["두억시니", "사마귀", "무쇠꾼"]
             
                 selected_boss = st.selectbox(
                     "보스 선택",
