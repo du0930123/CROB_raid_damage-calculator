@@ -34,16 +34,34 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
     boss = st.selectbox("보스 선택", BOSS_LIST, index=0)
 
     st.markdown("### 조건")
-    conditions = [
-        "게임속도 증가 없음",
-        "보스 약화에 따른 딜량 증가를 반영하지 않음",
-        "빌드에 능숙한 5인 파티",
-        "4페를 어느정도 버틸 수 있을 만큼, 체력 여유가 있는 상태",
-    ]
+    
+    BOSS_CONDITIONS = {
+        "사마귀": [
+            "게임속도 증가 없음",
+            "보스 약화에 따른 딜량 증가를 반영하지 않음",
+            "빌드에 능숙한 5인 파티",
+            "4페를 어느정도 버틸 수 있을 만큼, 체력 여유가 있는 상태",
+        ],
+    
+        "두억시니": [
+            "게임속도 증가 없음",
+            "빌드에 능숙한 5인 파티",
+            "공주런 급으로 4페 견딜 수 있음",
+        ],
+    
+        "무쇠꾼": [
+            "게임속도 증가, 스킬에너지젤리 떨어짐, 모든점수2배 옵션 반영하지 않음",
+            "스킬에 따라 다른 딜레이로 인해 발생하는 빌드 유불리사항을 반영하지않음",
+            "고렙돌 전용 빌드(열기 식힌 후 소화기먹고 3페 진입)에 능숙한 5인 파티",
+        ],
+    }
+    
+    conditions = BOSS_CONDITIONS.get(boss, [])
+    
     for c in conditions:
         st.write(f"- {c}")
+    
     st.markdown("---")
-
     # ✅ party_type은 '표시/추천용 라벨'로만 유지 (판정에서는 무시)
     party_type_label = st.radio(
         "파티 유형 선택(표시/추천용)",
