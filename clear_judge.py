@@ -209,8 +209,9 @@ def render_clear_judge_box(
                 text-align: center;
                 line-height: 1.5;
             ">
-                겜속, 빌드에 따라 실제 클리어 여부 달라짐<br>
-                노랑은 여유로 떠도 클리어 힘들 수 있음
+                지금 겜속 반영 데이터 없어서 겜속있으면 상당히 부정확<br>
+                빌드, 겜속에따라 클리어여부 달라짐<br>
+                노랑은 여유떠도 힘들 수 있음
             </div>
             """,
             unsafe_allow_html=True
