@@ -31,7 +31,7 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
         }
     }
 
-    boss = st.selectbox("보스 선택", BOSS_LIST, index=0)
+    boss = st.selectbox("보스 선택", BOSS_LIST, index=2)
 
     st.markdown("### 조건")
     
