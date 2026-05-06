@@ -79,10 +79,32 @@
       }
     ]
   },
-  "사마귀": {
-    "profiles": []
-  },
   "무쇠꾼": {
+    "profiles": [
+      {
+        "boss_hp_est": 29390180400.0,
+        "label": "파랑(눈설탕, 캡아 구성)",
+        "ref_P": 696673.1097972973,
+        "ref_common_damage_buff_pct": 78.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_party": "눈설탕 3 캡틴아이스 1",
+        "ref_required_norm": 42186.471656055895,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 262412325.0,
+        "ref_total_mp": 1510,
+        "ref_vec": {
+          "눈설탕": 0.7350993377483444,
+          "캡틴아이스": 0.26490066225165565
+        },
+        "ref_weakness_bonus_by_color": {
+          "노랑": 0.0,
+          "파랑": 0.16
+        },
+        "threshold_cycles": 112
+      }
+    ]
+  },
+  "사마귀": {
     "profiles": []
   }
 }
