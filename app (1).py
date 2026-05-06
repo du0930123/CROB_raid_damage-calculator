@@ -523,7 +523,7 @@ with tab1:
                 selected_boss = st.selectbox(
                     "보스 선택",
                     BOSS_LIST,
-                    index=0,
+                    index=2,
                     key="tab1_boss_select"
                 )
                 boss_speed_alpha = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss, DEFAULT_GAME_SPEED_ALPHA)
