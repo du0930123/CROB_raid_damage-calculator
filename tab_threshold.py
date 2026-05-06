@@ -15,22 +15,6 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
     # 보스 목록
     BOSS_LIST = ["사마귀", "두억시니", "무쇠꾼"]
 
-    # (표시용) 경험적 가이드: 파티유형 라벨별 텍스트
-    BOSS_GUIDE = {
-        "사마귀": {
-            "빨강(주로 비트 구성)": "105 ~ 110회",
-            "파랑(눈설탕, 캡아 구성)": "105 ~ 110회",
-            "노랑(주로 스네 구성)": "155회 내외",
-            "빨강(주로 인삼 구성)": "데이터 없음",
-        },
-        "두억시니": {
-            "빨강(주로 비트 구성)": "-",
-            "파랑(눈설탕, 캡아 구성)": "-",
-            "노랑(주로 스네 구성)": "-",
-            "빨강(주로 인삼 구성)": "-",
-        }
-    }
-
     boss = st.selectbox("보스 선택", BOSS_LIST, index=2)
 
     st.markdown("### 조건")
@@ -70,11 +54,6 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
         index=0
     )
 
-    st.markdown("### 경험적 파티사이클 경계(표시용)")
-    guide = BOSS_GUIDE.get(boss, {})
-    cycle_text = guide.get(party_type_label, "데이터 없음")
-    st.write(f"- 기준: **{cycle_text}**")
-    st.markdown("---")
 
     # 🔒 관리자 영역
     if admin_mode:
