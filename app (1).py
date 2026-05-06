@@ -709,7 +709,7 @@ with tab2:
     selected_boss_cmp = st.selectbox(
         "보스 선택(비교 기준)",
         BOSS_LIST,
-        index=0,   # ✅ 두억시니 기본
+        index=2,   # ✅ 두억시니 기본
         key="tab2_boss_select"
     )
     boss_speed_alpha_cmp = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss_cmp, DEFAULT_GAME_SPEED_ALPHA)
