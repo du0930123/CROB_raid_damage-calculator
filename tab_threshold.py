@@ -13,7 +13,7 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
     st.subheader("📌 파티사이클 클리어 여부 경계값 (정규화 적용)")
 
     # 보스 목록
-    BOSS_LIST = ["사마귀", "두억시니"]
+    BOSS_LIST = ["사마귀", "두억시니", "무쇠꾼"]
 
     # (표시용) 경험적 가이드: 파티유형 라벨별 텍스트
     BOSS_GUIDE = {
