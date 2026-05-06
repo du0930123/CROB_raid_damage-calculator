@@ -705,7 +705,7 @@ with tab2:
             key="boss_hp_inc_pct_cmp"
         )
         
-    BOSS_LIST = ["두억시니", "사마귀"]
+    BOSS_LIST = ["두억시니", "사마귀", "무쇠꾼"]
     selected_boss_cmp = st.selectbox(
         "보스 선택(비교 기준)",
         BOSS_LIST,
