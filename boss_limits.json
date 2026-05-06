@@ -101,6 +101,24 @@
           "파랑": 0.16
         },
         "threshold_cycles": 112
+      },
+      {
+        "boss_hp_est": 16357021199.999998,
+        "label": "노랑(주로 스네 구성)",
+        "ref_P": 397149.90865384607,
+        "ref_common_damage_buff_pct": 0.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_party": "스네이크 4 캡틴아이스 1",
+        "ref_required_norm": 41186.012746276865,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 113590424.99999999,
+        "ref_total_mp": 1440,
+        "ref_vec": {
+          "스네이크": 0.7222222222222222,
+          "캡틴아이스": 0.2777777777777778
+        },
+        "ref_weakness_bonus_by_color": {},
+        "threshold_cycles": 144
       }
     ]
   },
