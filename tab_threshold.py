@@ -13,9 +13,9 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
     st.subheader("📌 파티사이클 클리어 여부 경계값 (정규화 적용)")
 
     # 보스 목록
-    BOSS_LIST = ["사마귀", "두억시니", "무쇠꾼"]
+    BOSS_LIST = ["사마귀", "두억시니", "무쇠꾼", "크치뱀"]
 
-    boss = st.selectbox("보스 선택", BOSS_LIST, index=2)
+    boss = st.selectbox("보스 선택", BOSS_LIST, index=3)
 
     st.markdown("### 조건")
     
