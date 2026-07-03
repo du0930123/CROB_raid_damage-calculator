@@ -518,12 +518,12 @@ with tab1:
                 if party5_on:
                     effective_boss_hp *= 5.0
             
-                BOSS_LIST = ["두억시니", "사마귀", "무쇠꾼"]
+                BOSS_LIST = ["두억시니", "사마귀", "무쇠꾼", "크치뱀"]
             
                 selected_boss = st.selectbox(
                     "보스 선택",
                     BOSS_LIST,
-                    index=2,
+                    index=3,
                     key="tab1_boss_select"
                 )
                 boss_speed_alpha = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss, DEFAULT_GAME_SPEED_ALPHA)
@@ -705,11 +705,11 @@ with tab2:
             key="boss_hp_inc_pct_cmp"
         )
         
-    BOSS_LIST = ["두억시니", "사마귀", "무쇠꾼"]
+    BOSS_LIST = ["두억시니", "사마귀", "무쇠꾼", "크치뱀"]
     selected_boss_cmp = st.selectbox(
         "보스 선택(비교 기준)",
         BOSS_LIST,
-        index=2,   # ✅ 두억시니 기본
+        index=3,   
         key="tab2_boss_select"
     )
     boss_speed_alpha_cmp = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss_cmp, DEFAULT_GAME_SPEED_ALPHA)
