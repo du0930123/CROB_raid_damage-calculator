@@ -145,6 +145,26 @@
         },
         "ref_weakness_bonus_by_color": {},
         "threshold_cycles": 88
+      },
+      {
+        "boss_hp_est": 17104543320.000002,
+        "label": "빨강(주로 비트 구성)",
+        "ref_P": 480464.7,
+        "ref_common_damage_buff_pct": 30.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_party": "레판 1 비트 3",
+        "ref_required_norm": 35600.0,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 192185880.00000003,
+        "ref_total_mp": 1600,
+        "ref_vec": {
+          "레판": 0.25,
+          "비트": 0.75
+        },
+        "ref_weakness_bonus_by_color": {
+          "빨강": 0.0
+        },
+        "threshold_cycles": 89
       }
     ]
   }
