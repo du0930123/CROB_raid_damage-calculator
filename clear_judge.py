@@ -209,9 +209,9 @@ def render_clear_judge_box(
                 text-align: center;
                 line-height: 1.5;
             ">
-                지금 데이터 없어서 클리어 여부 상당히 부정확<br>
+                데이터 부족해서 클리어 여부 부정확할수있음<br>
                 빌드, 겜속에따라 클리어여부 달라짐<br>
-                노랑은 여유떠도 힘들 수 있음
+                공주런 4페 끝까지가는걸 기준으로 잡은 상태
             </div>
             """,
             unsafe_allow_html=True
