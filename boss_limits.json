@@ -126,6 +126,26 @@
     "profiles": []
   },
   "크치뱀": {
-  "profiles": []
+    "profiles": [
+      {
+        "boss_hp_est": 14753408142.0,
+        "label": "빨강(주로 비트 구성)",
+        "ref_P": 419130.91312499996,
+        "ref_common_damage_buff_pct": 0.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_party": "캡틴 1 레판 1 비트 3",
+        "ref_required_norm": 35200.0,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 167652365.25,
+        "ref_total_mp": 2000,
+        "ref_vec": {
+          "레판": 0.2,
+          "비트": 0.6,
+          "캡틴아이스": 0.2
+        },
+        "ref_weakness_bonus_by_color": {},
+        "threshold_cycles": 88
+      }
+    ]
   }
 }
