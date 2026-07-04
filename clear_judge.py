@@ -210,7 +210,7 @@ def render_clear_judge_box(
                 line-height: 1.5;
             ">
                 빌드, 겜속에따라 클리어여부 달라짐<br>
-                공주런 4페 끝까지가는걸 기준으로 잡은 상태
+                계산기를 너무 믿지는 말 것
             </div>
             """,
             unsafe_allow_html=True
