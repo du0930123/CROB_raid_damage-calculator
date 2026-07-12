@@ -209,7 +209,7 @@ def render_clear_judge_box(
                 text-align: center;
                 line-height: 1.5;
             ">
-                빌드, 겜속에따라 클리어여부 달라짐<br>
+                빌드, 겜속, 돌 색에따라 클리어여부 달라짐<br>
                 계산기를 너무 믿지는 말 것
             </div>
             """,

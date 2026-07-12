@@ -1,0 +1,2 @@
+COLOR_MATCH_BONUS = 0.30
+COLOR_OPTIONS = ["빨강", "노랑", "파랑"]

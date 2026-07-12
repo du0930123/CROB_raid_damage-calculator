@@ -2,11 +2,11 @@ import math
 import json
 import streamlit as st
 from typing import Dict, Any
-from boss_limits_store import get_limits_store, save_limits
+from src.boss_limits_store import get_limits_store, save_limits
 
 # ✅ clear_judge.py에 아래 함수가 있어야 함:
 # - party_to_mp_share_vector(party) -> Dict[str, float]
-from clear_judge import party_to_mp_share_vector
+from src.clear_judge import party_to_mp_share_vector
 
 
 def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, admin_mode: bool = False):
