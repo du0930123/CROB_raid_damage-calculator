@@ -35,7 +35,7 @@ def render_single_party_tab():
             names = [k for k, v in CHARACTER_DB.items() if v.color == color]
             st.write(f"- {color}: " + ", ".join(names))
 
-    st.caption("직업은 데미지가 아니라 **스킬 에너지 충전 속도**에만 영향을 줘요.")
+    st.caption("직업은 데미지가 아니라 스킬 에너지 충전 속도에만 영향을 줘요.")
 
     st.markdown(
         f"""
@@ -43,11 +43,12 @@ def render_single_party_tab():
 
 직업 종류: {', '.join(JOB_OPTIONS)} (방/젤/회로 줄여써도 인식)<br><br>
 
-- 입력 형식: 스킬+스킬 직업 인원수<br>
+- 입력 형식: 스킬+스킬 직업 인원수<br><br>
 
 - 예시: 비+연 회 3 비+석 회 1 비+캡 젤 1 → 비트+연금 3명(회피), 비트+석류 1명(회피), 비트+캡 1명(젤리)<br>
-- 예시 : 비트+연금 회 3 비트+석류 회 1 비트+캡 젤 1 -&gt; 위와 동일<br>
-- ⚠️ 딜 스킬 없이 유틸 스킬로만 구성될 경우 적지 마세요 (석공, 석치 등)
+- 예시 : 비트+연금 회 3 비트+석류 회 1 비트+캡 젤 1 -&gt; 위와 동일<br><br>
+
+- ⚠️ 석공같은 버프류 스킬은 적지 마세요 (석공, 석치 등)
 
 </div>
 """,
@@ -412,6 +413,12 @@ def _render_boss_hp_result(
     if party5_on:
         effective_boss_hp *= 5.0
 
+    # ✅ 체력 임계값 앵커 판정용 "기본 체력" - 보스체력증가 옵션은 제외하고 계산
+    #    (그 옵션 하나로 앵커 티어가 흔들리지 않게, party5는 그대로 반영)
+    base_boss_hp = boss_hp if boss_hp is not None else 0.0
+    if party5_on:
+        base_boss_hp *= 5.0
+
     boss_speed_alpha = GAME_SPEED_ALPHA_BY_BOSS.get(selected_boss, DEFAULT_GAME_SPEED_ALPHA)
     boss_job_energy_alpha_by_job = get_job_energy_alpha_by_job(
         boss_name=selected_boss,
@@ -473,6 +480,7 @@ def _render_boss_hp_result(
         weight_power=1.0,
         title="정규화 클리어 판정 (순수, 보정 없음)",
         show_notice=True,
+        tier_boss_hp=base_boss_hp,
     )
 
     if show_async_block:
@@ -489,6 +497,7 @@ def _render_boss_hp_result(
             title="정규화 클리어 판정 (겜속·에너지·직업 반영)",
             show_notice=False,
             norm_field="ref_required_norm_adjusted",
+            tier_boss_hp=base_boss_hp,
         )
 
     st.write(f"- 필요 파티 사이클: **{cycles} 회**")
