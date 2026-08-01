@@ -209,10 +209,16 @@ def render_clear_judge_box(
     title: str = "정규화 클리어 판정",
     show_notice: bool = True,   # ✅ 추가
     norm_field: str = "ref_required_norm",
+    tier_boss_hp: Optional[float] = None,
 ):
     """
     party_type 선택 없음.
     보스 profiles 풀에서 자동으로 ENERGY_LIMIT(가중평균)을 계산.
+
+    tier_boss_hp: 체력 임계값 앵커 판정(어느 티어 프로필과 비교할지)에 쓸 체력.
+      None이면 boss_hp를 그대로 씀. "보스체력증가 옵션" 등으로 뻥튀기된 체력을
+      실제 판정(judge_clear)엔 그대로 쓰되, 앵커 티어 판정에는 안 쓰고 싶으면
+      여기에 "보정 전 기본 체력"을 따로 넘기면 됨.
     """
     st.markdown(f"### ✅ {title}")
 
@@ -222,7 +228,7 @@ def render_clear_judge_box(
         k=k_profiles,
         power=weight_power,
         norm_field=norm_field,
-        query_boss_hp=boss_hp,
+        query_boss_hp=tier_boss_hp if tier_boss_hp is not None else boss_hp,
     )
 
     if err or ref_required_norm is None:
@@ -278,9 +284,12 @@ def judge_clear_for_table(
     k_profiles: int = 5,
     weight_power: float = 1.0,
     norm_field: str = "ref_required_norm",
+    tier_boss_hp: Optional[float] = None,
 ):
     """
     탭2(비교 테이블)용: UI 없이 결과만 반환
+
+    tier_boss_hp: 체력 임계값 앵커 판정에 쓸 체력 (None이면 boss_hp 그대로 씀)
     """
     ref_required_norm, used, err = compute_energy_limit_weighted(
         boss=boss,
@@ -288,7 +297,7 @@ def judge_clear_for_table(
         k=k_profiles,
         power=weight_power,
         norm_field=norm_field,
-        query_boss_hp=boss_hp,
+        query_boss_hp=tier_boss_hp if tier_boss_hp is not None else boss_hp,
     )
 
     required_energy = compute_required_energy(boss_hp, P)
