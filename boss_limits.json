@@ -128,29 +128,6 @@
   "아수라": {
     "profiles": [
       {
-        "boss_hp_est": 31693327524.999996,
-        "label": "노랑(주로 스네 구성)",
-        "ref_P": 478217.11513157893,
-        "ref_boss_hp_for_alpha": 60906062640.0,
-        "ref_common_damage_buff_pct": 0.0,
-        "ref_dps_ratio_async": 1.039,
-        "ref_energy_decrease_by_color": {},
-        "ref_game_speed_pct": 0.0,
-        "ref_job_text": "스+캡 회 1 스+연 회 3 스+석 회 1",
-        "ref_party": "스네이크 5 캡틴아이스 1",
-        "ref_required_norm": 66273.92981591582,
-        "ref_required_norm_adjusted": 63786.265462864125,
-        "ref_stone_crit_buff_pct": 0.0,
-        "ref_total_dmg": 183198424.99999997,
-        "ref_total_mp": 2300,
-        "ref_vec": {
-          "스네이크": 0.8260869565217391,
-          "캡틴아이스": 0.17391304347826086
-        },
-        "ref_weakness_bonus_by_color": {},
-        "threshold_cycles": 173
-      },
-      {
         "boss_hp_est": 20742250620.0,
         "is_hp_ceiling_anchor": true,
         "label": "빨강(주로 비트 구성)",
