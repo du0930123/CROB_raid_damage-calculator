@@ -221,7 +221,7 @@ def render_clear_judge_box(
                 line-height: 1.5;
             ">
                 빌드, 겜속, 돌 색에따라 클리어여부 달라짐<br>
-                계산기를 너무 믿지는 말 것
+                700이상은 모점2배나 겜속30 있어야 0페넘어감
             </div>
             """,
             unsafe_allow_html=True
