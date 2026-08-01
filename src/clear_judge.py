@@ -95,6 +95,7 @@ def compute_energy_limit_weighted(
     eps: float = 1e-6,
     power: float = 1.0,
     norm_field: str = "ref_required_norm",
+    query_boss_hp: Optional[float] = None,
 ) -> Tuple[Optional[float], Optional[List[Dict[str, Any]]], Optional[str]]:
     """
     보스의 profiles 전체에서 거리 기반 가중평균 ENERGY_LIMIT 계산
@@ -108,6 +109,11 @@ def compute_energy_limit_weighted(
         - "ref_required_norm_adjusted": 그 기준 파티가 실제로 썼던 직업/겜속까지
           반영한 기준 (에너지감소·겜속·직업 반영 박스용). 이 필드가 없는 옛날
           프로필은 자동으로 "ref_required_norm"(순수값)로 대체됨.
+      query_boss_hp: 지금 조회 중인 보스 체력. 프로필 중 "체력 임계값 앵커"
+        (is_hp_ceiling_anchor=True)로 지정된 게 있으면, query_boss_hp가 그
+        앵커의 boss_hp_est 이하일 때 그 앵커 체력 이하인 프로필들로만
+        후보를 좁혀서 매칭함 (예: 700레벨 이상 급격한 난이도 상승 반영).
+        None이면 이 필터링을 하지 않음(기존 동작 그대로).
 
     Returns:
       ref_required_norm (float or None)
@@ -117,6 +123,26 @@ def compute_energy_limit_weighted(
     profiles = _get_boss_profiles(boss)
     if not profiles:
         return None, None, "선택한 보스에 저장된 profiles가 없어요(탭3 관리자 저장 필요)."
+
+    # ✅ 체력 임계값 앵커 필터링
+    #    query_boss_hp보다 큰(같거나 큰) boss_hp_est를 가진 "앵커" 프로필들 중
+    #    가장 작은 걸 찾아서(=바로 위 티어 경계), 그 이하 프로필로만 후보를 좁힘
+    if query_boss_hp is not None:
+        anchors = [
+            p for p in profiles
+            if p.get("is_hp_ceiling_anchor") and p.get("boss_hp_est") is not None
+        ]
+        applicable_anchors = [
+            p for p in anchors if float(p["boss_hp_est"]) >= float(query_boss_hp)
+        ]
+        if applicable_anchors:
+            ceiling = min(float(p["boss_hp_est"]) for p in applicable_anchors)
+            filtered = [
+                p for p in profiles
+                if p.get("boss_hp_est") is not None and float(p["boss_hp_est"]) <= ceiling
+            ]
+            if filtered:
+                profiles = filtered
 
     cur_vec = party_to_mp_share_vector(party)
     if not cur_vec:
@@ -196,6 +222,7 @@ def render_clear_judge_box(
         k=k_profiles,
         power=weight_power,
         norm_field=norm_field,
+        query_boss_hp=boss_hp,
     )
 
     if err or ref_required_norm is None:
@@ -221,7 +248,7 @@ def render_clear_judge_box(
                 line-height: 1.5;
             ">
                 빌드, 겜속, 돌 색에따라 클리어여부 달라짐<br>
-                계산기를 너무 믿지는 말 것
+                700이상은 모점2배나 겜속30 있어야 0페넘어감
             </div>
             """,
             unsafe_allow_html=True
@@ -261,6 +288,7 @@ def judge_clear_for_table(
         k=k_profiles,
         power=weight_power,
         norm_field=norm_field,
+        query_boss_hp=boss_hp,
     )
 
     required_energy = compute_required_energy(boss_hp, P)

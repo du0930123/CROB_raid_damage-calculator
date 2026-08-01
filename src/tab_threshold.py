@@ -231,6 +231,19 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
             help="모르면 0으로 두면 됨(그러면 저체력 구간 alpha로 계산됨)",
         )
 
+        st.markdown("#### 🆕 체력 임계값 앵커 지정")
+        st.caption(
+            "이 프로필을 '체력 임계값 앵커'로 지정하면, 조회하는 보스 체력이 "
+            "**이 프로필의 boss_hp_est 이하일 때, 그 이하 체력의 프로필들로만 좁혀서** "
+            "비교해요. (예: 700레벨부터 난이도가 급변하는데, 그 직전(699)의 "
+            "빡빡하게 깬 돌을 앵커로 지정하면, 그보다 체력 낮은 돌들은 이 프로필 "
+            "위주로 비교됨 — 위쪽 티어의 쉬운/어려운 프로필과 안 섞임)"
+        )
+        is_hp_ceiling_anchor = st.checkbox(
+            "이 프로필을 체력 임계값 앵커로 지정",
+            key=f"hp_anchor_{boss}_{party_type_label}",
+        )
+
         # ✅ 저장 버튼
         if st.button("✅ 이 보스 기준 프로필 저장(party_type 무시)", key=f"save_profile_{boss}_{party_type_label}"):
             try:
@@ -310,6 +323,9 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     "ref_game_speed_pct": float(ref_game_speed_pct),
                     "ref_boss_hp_for_alpha": float(ref_boss_hp_for_alpha),
                     "ref_dps_ratio_async": float(ref_dps_ratio_async),
+
+                    # 🆕 체력 임계값 앵커 여부
+                    "is_hp_ceiling_anchor": bool(is_hp_ceiling_anchor),
                 })
                 
                 save_limits(store)
@@ -317,7 +333,9 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                 st.success(
                     f"저장 완료! (ref_required_norm(순수) = {ref_required_norm:,.2f}, "
                     f"ref_required_norm_adjusted = {ref_required_norm_adjusted:,.2f}, "
-                    f"boss_hp_est = {boss_hp_est:,.0f})"
+                    f"boss_hp_est = {boss_hp_est:,.0f}"
+                    + (", 🆕 체력 임계값 앵커로 지정됨" if is_hp_ceiling_anchor else "")
+                    + ")"
                 )
                 st.caption(f"- 기준 파티 1사이클 총 MP = {total_mp:,}")
                 st.caption(f"- 기준 파티 P(Σ(dmg/eff_mp)) = {total_dmg_per_mp_sum:,.2f}")
@@ -374,6 +392,7 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     f"boss_hp_est={float(p.get('boss_hp_est',0)):,.0f} | 기준파티=`{p.get('ref_party','')}`"
                     + (f" | 직업=`{p.get('ref_job_text','')}`" if p.get('ref_job_text') else "")
                     + (f" | 겜속={p.get('ref_game_speed_pct',0):.0f}%" if p.get('ref_game_speed_pct') else "")
+                    + (" | 🆕**체력임계값앵커**" if p.get('is_hp_ceiling_anchor') else "")
                 )
         else:
             st.info("아직 저장된 프로필이 없어요. 위에서 저장해줘.")

@@ -6,13 +6,28 @@ import streamlit as st
 from src.constants import COLOR_OPTIONS
 from src.party_parser import build_party_from_text
 from src.calculator import calculate_party, compute_async_dps_ratio
-from src.boss_config import GAME_SPEED_ALPHA_BY_BOSS, DEFAULT_GAME_SPEED_ALPHA, BOSS_LIST, DEFAULT_BOSS
+from src.boss_config import (
+    GAME_SPEED_ALPHA_BY_BOSS,
+    DEFAULT_GAME_SPEED_ALPHA,
+    BOSS_LIST,
+    DEFAULT_BOSS,
+    get_job_energy_alpha_by_job,
+)
 from src.clear_judge import judge_clear_for_table
 from src.stones import compute_avg_defense_effect_pct
+from src.jobs import (
+    build_job_assignments_from_text,
+    build_party_and_jobs_from_job_text,
+    merge_party_by_character,
+)
 
 
 def render_party_compare_tab():
-    st.caption("파티를 한 줄에 하나씩 입력 (예: 비트 1 레판 4)")
+    st.caption(
+        "파티를 한 줄에 하나씩 입력 (예: 비트 1 레판 4). "
+        "🆕 직업까지 반영하고 싶으면, 그 줄을 직업 텍스트 형식으로 써도 돼요 "
+        "(예: 스+캡 회 1 스+연 회 3 스+석 회 1) — 파티 구성이 자동으로 추론됩니다."
+    )
 
     party_texts = st.text_area(
         "비교할 파티 목록",
@@ -21,9 +36,10 @@ def render_party_compare_tab():
             "비트 2 레판 2\n"
             "캡틴아이스 1 비트 2 레판 1\n"
             "뱀파 1 레판 4\n"
-            "스네이크 3 캡틴아이스 1"
+            "스네이크 3 캡틴아이스 1\n"
+            "스+캡 회 1 스+연 회 3 스+석 회 1"
         ),
-        height=160,
+        height=180,
     )
 
     weakness_colors_cmp = st.multiselect(
@@ -92,9 +108,9 @@ def render_party_compare_tab():
     energy_increase_by_color_cmp: Dict[str, float] = {}
     with st.expander("🆕 신규 소환석 옵션 (색상 에너지 증감 / 방어약화·강화)", expanded=False):
         st.caption(
-            "※ 비교 탭은 여러 파티를 한번에 비교하는 구조라, 직업(젤리술사/회피도사/방패지기) "
-            "관련 옵션은 파티별로 다르게 배정하기 어려워 여기서는 지원하지 않아요. "
-            "직업까지 반영해서 보려면 '단일 파티 계산' 탭을 이용해주세요."
+            "※ 직업(젤리술사/회피도사/방패지기)은 이제 '비교할 파티 목록'에서 "
+            "그 줄을 직업 텍스트 형식(예: 스+캡 회 1)으로 쓰면 자동 인식돼요. "
+            "여기 있는 옵션들은 모든 줄에 공통으로 적용되는 옵션입니다."
         )
         st.caption("양수(+)면 획득량 증가, 음수(-)면 감소로 처리돼요.")
         for color in COLOR_OPTIONS:
@@ -244,7 +260,30 @@ def _calculate_compare_row(
 ):
     energy_increase_by_color_cmp = energy_increase_by_color_cmp or {}
 
-    party = build_party_from_text(line)
+    # ✅ 먼저 "직업 텍스트" 형식으로 시도 (예: 스+캡 회 1 스+연 회 3)
+    #    실패하면(일반 파티 텍스트면 당연히 실패함) 기존 방식으로 파싱
+    job_per_instance = None
+    try:
+        test_assignments = build_job_assignments_from_text(line)
+        if test_assignments:
+            party, job_per_instance = build_party_and_jobs_from_job_text(line)
+        else:
+            party = build_party_from_text(line)
+    except Exception:
+        party = build_party_from_text(line)
+
+    if job_per_instance is None:
+        job_per_instance = [None] * len(party)
+
+    display_party_text = merge_party_by_character(party) if any(
+        j is not None for j in job_per_instance
+    ) else line
+
+    boss_job_energy_alpha_by_job = get_job_energy_alpha_by_job(
+        boss_name=selected_boss_cmp,
+        boss_hp_total=boss_hp_cmp,
+        party_size=len(party),
+    )
 
     total_dmg, total_dmg_per_mp_sum, total_mp, _, _, _ = calculate_party(
         party=party,
@@ -253,6 +292,7 @@ def _calculate_compare_row(
         weakness_bonus_by_color=weakness_bonus_by_color_cmp,
         energy_decrease_by_color=energy_decrease_by_color_cmp,
         energy_increase_by_color=energy_increase_by_color_cmp,
+        job_per_instance=job_per_instance,
     )
 
     boss_speed_alpha_cmp = GAME_SPEED_ALPHA_BY_BOSS.get(
@@ -267,6 +307,8 @@ def _calculate_compare_row(
         weakness_bonus_by_color=weakness_bonus_by_color_cmp,
         energy_decrease_by_color=energy_decrease_by_color_cmp,
         energy_increase_by_color=energy_increase_by_color_cmp,
+        job_per_instance=job_per_instance,
+        job_energy_alpha_by_job=boss_job_energy_alpha_by_job,
         game_speed_buff=game_speed_buff_pct_cmp / 100.0,
         game_speed_alpha=boss_speed_alpha_cmp if use_game_speed_model_cmp else 0.0,
     )
@@ -312,7 +354,8 @@ def _calculate_compare_row(
     )
 
     return {
-        "파티 구성": line,
+        "파티 구성": display_party_text,
+        "직업(감지됨)": line if any(j is not None for j in job_per_instance) else "-",
         "겜속 미반영 판정": judge_cols_base.get("정규화판정"),
         "겜속 미반영 여유율%": judge_cols_base.get("여유율"),
         "반영 판정": judge_cols_speed.get("정규화판정"),

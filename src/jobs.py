@@ -42,6 +42,7 @@ from src.constants import (
     EVASION_MAX_BONUS_FLAT,
 )
 from src.party_parser import CHARACTER_ALIAS
+from src.characters import Character, CHARACTER_DB
 
 
 JOB_ALIAS: Dict[str, str] = {
@@ -131,6 +132,68 @@ def build_job_assignments_from_text(text: str) -> List[Tuple[str, str, int]]:
             assignments.append((name, JOB_ALIAS[raw_job], count))
 
     return assignments
+
+
+def build_party_and_jobs_from_job_text(
+    job_text: str,
+) -> Tuple[List[Character], List[Optional[str]]]:
+    """
+    파티 구성을 따로 안 받고, 직업 텍스트 하나만으로 party와 job_per_instance를
+    동시에 만든다.
+
+    입력 예: "스+캡 회 1 스+연 회 3 스+석 회 1"
+    -> assignments: [("스네이크","회피도사",1), ("캡틴아이스","회피도사",1),
+                      ("스네이크","회피도사",3), ("스네이크","회피도사",1)]
+       (스+연, 스+석은 두번째가 데미지 스킬이 아니라서 스네이크만 남음)
+    -> party 구성이 "스네이크 5 캡틴아이스 1"이라는 걸 굳이 따로 입력 안 해도
+       assignments 자체에서 인원수가 다 나오므로 그대로 합산해서 만든다.
+
+    ⚠️ resolve_job_per_instance와 다르게, 여기선 assignments가 만들어진
+    "순서 그대로" party와 job_per_instance를 같이 쌓기 때문에, 인스턴스-직업
+    매칭이 원천적으로 어긋날 일이 없다 (이름별 큐 매칭이 아예 필요 없음).
+
+    Returns:
+      party: List[Character] (assignments 순서대로 생성됨)
+      job_per_instance: party와 같은 길이, 각 인스턴스의 직업(str)
+    """
+    assignments = build_job_assignments_from_text(job_text)
+
+    party: List[Character] = []
+    job_per_instance: List[Optional[str]] = []
+
+    for name, job, count in assignments:
+        if name not in CHARACTER_DB:
+            raise KeyError(f"DB에 없는 캐릭터: {name}")
+
+        party.extend([CHARACTER_DB[name]] * count)
+        job_per_instance.extend([job] * count)
+
+    if not party:
+        raise ValueError(
+            "직업 텍스트에서 파티를 하나도 못 만들었어요. "
+            "예) 스+캡 회 1 스+연 회 3 스+석 회 1"
+        )
+
+    return party, job_per_instance
+
+
+def merge_party_by_character(party: List[Character]) -> str:
+    """
+    party(List[Character], 같은 캐릭터가 흩어져 있을 수 있음)를 받아서,
+    기존 party_text 포맷("이름 수량 이름 수량 ...")으로 합쳐서 리턴.
+    (표시/디버그용 - 예: build_party_and_jobs_from_job_text로 만든 파티를
+     화면에 "이런 파티로 인식했어요"라고 보여줄 때 사용)
+    """
+    counts: Dict[str, int] = {}
+    order: List[str] = []
+    for c in party:
+        name = getattr(c, "name", "")
+        if name not in counts:
+            counts[name] = 0
+            order.append(name)
+        counts[name] += 1
+
+    return " ".join(f"{name} {counts[name]}" for name in order)
 
 
 def resolve_job_per_instance(

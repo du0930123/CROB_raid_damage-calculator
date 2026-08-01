@@ -23,6 +23,8 @@ from src.jobs import (
     validate_job_assignment_counts,
     total_job_assigned_count,
     compute_party_energy_bonus_pct,
+    build_party_and_jobs_from_job_text,
+    merge_party_by_character,
 )
 from src.stones import party_size_condition_bonus_pct, compute_avg_defense_effect_pct
 
@@ -33,7 +35,14 @@ def render_single_party_tab():
             names = [k for k, v in CHARACTER_DB.items() if v.color == color]
             st.write(f"- {color}: " + ", ".join(names))
 
-    party_text = st.text_input("파티 구성", value="스네이크 3 캡틴아이스 1")
+    party_text = st.text_input(
+        "파티 구성 (예: 스네이크 3 캡틴아이스 1 / 또는 직업까지 한번에: 스+캡 회 1 스+연 회 3)",
+        value="스네이크 3 캡틴아이스 1",
+        help=(
+            "일반 형식('이름 수량') 대신, 직업 텍스트 형식('이름+이름 직업 수량')으로 "
+            "써도 자동 인식돼요. 그러면 아래 '파티원 직업 구성' 칸을 따로 안 채워도 됩니다."
+        ),
+    )
 
     weakness_colors = st.multiselect("보스 약점 색 선택 (최대 2개)", options=COLOR_OPTIONS, default=[])
 
@@ -117,8 +126,8 @@ def render_single_party_tab():
         )
 
         job_text = st.text_input(
-            "파티원 직업 구성 (같은 캐릭터도 장마다 다른 직업 가능)",
-            value="",
+            "파티원 직업 구성 (석공같은 아예 버프류로 이루어진건 적지 마셈)",
+            value="스+캡 회 1 스+연 회 3",
             key="tab1_job_text",
             help=(
                 f"직업 종류: {', '.join(JOB_OPTIONS)} (방/젤/회 로 줄여써도 인식됨) / "
@@ -217,13 +226,34 @@ def render_single_party_tab():
 
     if st.button("단일 파티 계산"):
         try:
-            party = build_party_from_text(party_text)
+            # ✅ "파티 구성" 칸 자체가 직업 텍스트 형식(스+캡 회 1 ...)인지 먼저 시도
+            #    성공하면 파티+직업을 그 칸 하나에서 동시에 인식함
+            try:
+                party_text_as_job_assignments = build_job_assignments_from_text(party_text)
+            except Exception:
+                party_text_as_job_assignments = []
 
-            job_assignments = build_job_assignments_from_text(job_text)
-            job_per_instance = resolve_job_per_instance(party, job_assignments)
+            if party_text_as_job_assignments:
+                party, job_per_instance = build_party_and_jobs_from_job_text(party_text)
 
-            for w in validate_job_assignment_counts(party, job_assignments):
-                st.warning(w)
+                # 아래 "파티원 직업 구성" 칸에도 별도로 뭔가 입력되어 있으면 추가로 합침
+                if job_text.strip():
+                    extra_party, extra_jobs = build_party_and_jobs_from_job_text(job_text)
+                    party = party + extra_party
+                    job_per_instance = job_per_instance + extra_jobs
+
+                st.caption(
+                    f"ℹ️ '파티 구성' 칸을 직업 텍스트로 인식했어요 → "
+                    f"**{merge_party_by_character(party)}**"
+                )
+            else:
+                party = build_party_from_text(party_text)
+
+                job_assignments = build_job_assignments_from_text(job_text)
+                job_per_instance = resolve_job_per_instance(party, job_assignments)
+
+                for w in validate_job_assignment_counts(party, job_assignments):
+                    st.warning(w)
 
             job_assigned_count = total_job_assigned_count(job_per_instance)
 
@@ -444,7 +474,7 @@ def _render_boss_hp_result(
         show_match_info=False,
         k_profiles=5,
         weight_power=1.0,
-        title="정규화 클리어 판정 (겜속 미반영)",
+        title="정규화 클리어 판정 (순수, 보정 없음)",
         show_notice=True,
     )
 
@@ -459,7 +489,7 @@ def _render_boss_hp_result(
             show_match_info=True,
             k_profiles=5,
             weight_power=1.0,
-            title="정규화 클리어 판정 (에너지감소, 겜속, 직업 반영)",
+            title="정규화 클리어 판정 (겜속·에너지·직업 반영)",
             show_notice=False,
             norm_field="ref_required_norm_adjusted",
         )

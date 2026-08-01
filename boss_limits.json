@@ -149,6 +149,30 @@
         },
         "ref_weakness_bonus_by_color": {},
         "threshold_cycles": 173
+      },
+      {
+        "boss_hp_est": 20742250620.0,
+        "is_hp_ceiling_anchor": true,
+        "label": "빨강(주로 비트 구성)",
+        "ref_P": 398889.435,
+        "ref_boss_hp_for_alpha": 41787878400.0,
+        "ref_common_damage_buff_pct": 0.0,
+        "ref_dps_ratio_async": 1.1023062699999997,
+        "ref_energy_decrease_by_color": {},
+        "ref_game_speed_pct": 30.0,
+        "ref_job_text": "캡+연 회 3 캡+공 회 1 레+석 회 1",
+        "ref_party": "캡 4 레 1",
+        "ref_required_norm": 52000.0,
+        "ref_required_norm_adjusted": 47173.822208232574,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 159555774.0,
+        "ref_total_mp": 2000,
+        "ref_vec": {
+          "레판": 0.2,
+          "캡틴아이스": 0.8
+        },
+        "ref_weakness_bonus_by_color": {},
+        "threshold_cycles": 130
       }
     ]
   },
