@@ -323,6 +323,11 @@ def _calculate_compare_row(
     if party5_on_cmp:
         effective_boss_hp_cmp *= 5.0
 
+    # ✅ 체력 임계값 앵커 판정용 "기본 체력" - 보스체력증가 옵션은 제외하고 계산
+    base_boss_hp_cmp = boss_hp_cmp
+    if party5_on_cmp:
+        base_boss_hp_cmp *= 5.0
+
     p_base = total_dmg_per_mp_sum
     p_effective_cmp = total_dmg_per_mp_sum * dps_ratio_async
 
@@ -333,6 +338,7 @@ def _calculate_compare_row(
         party=party,
         k_profiles=5,
         weight_power=1.0,
+        tier_boss_hp=base_boss_hp_cmp,
     )
 
     judge_cols_speed = judge_clear_for_table(
@@ -342,6 +348,7 @@ def _calculate_compare_row(
         party=party,
         k_profiles=5,
         weight_power=1.0,
+        tier_boss_hp=base_boss_hp_cmp,
     )
 
     cycles = math.ceil(effective_boss_hp_cmp / total_dmg) if total_dmg > 0 else 0
