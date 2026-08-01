@@ -6,8 +6,9 @@ import streamlit as st
 from src.constants import COLOR_OPTIONS
 from src.party_parser import build_party_from_text
 from src.calculator import calculate_party, compute_async_dps_ratio
-from src.boss_config import GAME_SPEED_ALPHA_BY_BOSS, DEFAULT_GAME_SPEED_ALPHA
+from src.boss_config import GAME_SPEED_ALPHA_BY_BOSS, DEFAULT_GAME_SPEED_ALPHA, BOSS_LIST, DEFAULT_BOSS
 from src.clear_judge import judge_clear_for_table
+from src.stones import compute_avg_defense_effect_pct
 
 
 def render_party_compare_tab():
@@ -88,6 +89,40 @@ def render_party_compare_tab():
                 )
                 energy_decrease_by_color_cmp[wc] = e_pct / 100.0
 
+    energy_increase_by_color_cmp: Dict[str, float] = {}
+    with st.expander("🆕 신규 소환석 옵션 (색상 에너지 증감 / 방어약화·강화)", expanded=False):
+        st.caption(
+            "※ 비교 탭은 여러 파티를 한번에 비교하는 구조라, 직업(젤리술사/회피도사/방패지기) "
+            "관련 옵션은 파티별로 다르게 배정하기 어려워 여기서는 지원하지 않아요. "
+            "직업까지 반영해서 보려면 '단일 파티 계산' 탭을 이용해주세요."
+        )
+        st.caption("양수(+)면 획득량 증가, 음수(-)면 감소로 처리돼요.")
+        for color in COLOR_OPTIONS:
+            on = st.checkbox(f"{color} 에너지 획득량 증감 적용", key=f"cmp_energy_inc_on_{color}")
+            if on:
+                pct = st.number_input(
+                    f"{color} 에너지 획득량 증감(%) (+면 증가, -면 감소)",
+                    min_value=-300.0, max_value=300.0,
+                    value=0.0, step=1.0, key=f"cmp_energy_inc_pct_{color}",
+                )
+                energy_increase_by_color_cmp[color] = pct / 100.0
+
+        st.markdown("#### 몬스터 방어력 약화/강화")
+        st.caption("지속시간·발생주기·피해율은 고정값이라, 해당 보스에 적용되는지만 체크하면 돼요.")
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            weaken_on_cmp = st.checkbox("방어력 약화 있음", key="cmp_weaken_on")
+        with col_d2:
+            strengthen_on_cmp = st.checkbox("방어력 강화 있음", key="cmp_strengthen_on")
+
+        defense_avg_pct_cmp = compute_avg_defense_effect_pct(
+            weaken_on=weaken_on_cmp,
+            strengthen_on=strengthen_on_cmp,
+        )
+
+        if weaken_on_cmp or strengthen_on_cmp:
+            st.write(f"- 시간가중평균 피해변화: **{defense_avg_pct_cmp:+.2f}%** (공통 피해증가율에 자동 합산됨)")
+
     col1, col2 = st.columns(2)
 
     with col1:
@@ -99,6 +134,7 @@ def render_party_compare_tab():
             step=1.0,
             key="cmp_common",
         )
+        common_damage_buff_pct_cmp = common_damage_buff_pct_cmp + defense_avg_pct_cmp
 
     with col2:
         stone_crit_buff_pct_cmp = st.number_input(
@@ -145,12 +181,10 @@ def render_party_compare_tab():
             key="boss_hp_inc_pct_cmp",
         )
 
-    boss_list = ["두억시니", "사마귀", "무쇠꾼", "크치뱀"]
-
     selected_boss_cmp = st.selectbox(
         "보스 선택(비교 기준)",
-        boss_list,
-        index=3,
+        BOSS_LIST,
+        index=BOSS_LIST.index(DEFAULT_BOSS),
         key="tab2_boss_select",
     )
 
@@ -179,6 +213,7 @@ def render_party_compare_tab():
                     party5_on_cmp=party5_on_cmp,
                     weakness_bonus_by_color_cmp=weakness_bonus_by_color_cmp,
                     energy_decrease_by_color_cmp=energy_decrease_by_color_cmp,
+                    energy_increase_by_color_cmp=energy_increase_by_color_cmp,
                     common_damage_buff_pct_cmp=common_damage_buff_pct_cmp,
                     stone_crit_buff_pct_cmp=stone_crit_buff_pct_cmp,
                     use_game_speed_model_cmp=use_game_speed_model_cmp,
@@ -205,7 +240,10 @@ def _calculate_compare_row(
     stone_crit_buff_pct_cmp,
     use_game_speed_model_cmp,
     game_speed_buff_pct_cmp,
+    energy_increase_by_color_cmp=None,
 ):
+    energy_increase_by_color_cmp = energy_increase_by_color_cmp or {}
+
     party = build_party_from_text(line)
 
     total_dmg, total_dmg_per_mp_sum, total_mp, _, _, _ = calculate_party(
@@ -214,6 +252,7 @@ def _calculate_compare_row(
         stone_crit_buff=stone_crit_buff_pct_cmp / 100.0,
         weakness_bonus_by_color=weakness_bonus_by_color_cmp,
         energy_decrease_by_color=energy_decrease_by_color_cmp,
+        energy_increase_by_color=energy_increase_by_color_cmp,
     )
 
     boss_speed_alpha_cmp = GAME_SPEED_ALPHA_BY_BOSS.get(
@@ -227,6 +266,7 @@ def _calculate_compare_row(
         stone_crit_buff=stone_crit_buff_pct_cmp / 100.0,
         weakness_bonus_by_color=weakness_bonus_by_color_cmp,
         energy_decrease_by_color=energy_decrease_by_color_cmp,
+        energy_increase_by_color=energy_increase_by_color_cmp,
         game_speed_buff=game_speed_buff_pct_cmp / 100.0,
         game_speed_alpha=boss_speed_alpha_cmp if use_game_speed_model_cmp else 0.0,
     )

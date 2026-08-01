@@ -23,6 +23,7 @@ class Character:
         lepain_crit_buff_total: float,
         stone_crit_buff: float,
         weakness_bonus_by_color: Dict[str, float],
+        extra_dmg_bonus: float = 0.0,
     ) -> float:
         base = self.base_damage * self.hits
 
@@ -32,6 +33,10 @@ class Character:
             dmg_mult += COLOR_MATCH_BONUS
 
         dmg_mult += weakness_bonus_by_color.get(self.color, 0.0)
+
+        # ✅ 신규 소환석 옵션: "젤리/회피/방패 직업 캐릭터 피해량 nn% 증가" 등
+        #    캐릭터별로 다르게 붙는 추가 보너스 (기본 0, 하위호환)
+        dmg_mult += extra_dmg_bonus
 
         if dmg_mult < 0:
             dmg_mult = 0.0
@@ -58,9 +63,9 @@ CHARACTER_DB: Dict[str, Character] = {
         party_damage_buff=0.13,
     ),
 
-    "스네이크": Character("스네이크", 2325000, 8, 0.0, 0.0, 260, color="노랑"),
+    "스네이크": Character("스네이크", 3400000, 8, 0.0, 0.0, 380, color="노랑"),
 
-    "인삼": Character("인삼", 4530000, 3, 0.0, 0.0, 170, color="빨강"),
+    "인삼": Character("인삼", 7465000, 3, 0.0, 0.0, 280, color="빨강"),
     "비트": Character("비트", 1807500, 15, 0.20, 0.30, 400, color="빨강"),
     "레판": Character(
         "레판",

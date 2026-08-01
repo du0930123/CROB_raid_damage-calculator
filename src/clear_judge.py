@@ -94,6 +94,7 @@ def compute_energy_limit_weighted(
     k: int = 5,
     eps: float = 1e-6,
     power: float = 1.0,
+    norm_field: str = "ref_required_norm",
 ) -> Tuple[Optional[float], Optional[List[Dict[str, Any]]], Optional[str]]:
     """
     보스의 profiles 전체에서 거리 기반 가중평균 ENERGY_LIMIT 계산
@@ -102,6 +103,11 @@ def compute_energy_limit_weighted(
       k: 가까운 프로필 상위 k개만 사용(너무 많은 프로필이 섞이는 걸 방지)
       power: 가중치 강도 (1.0=기본, 2.0=가까운 것 더 강하게)
         w_i = 1 / (d_i + eps)^power
+      norm_field: 프로필에서 어떤 기준값을 쓸지.
+        - "ref_required_norm": 직업/겜속 미반영 순수 기준 (겜속 미반영 박스용)
+        - "ref_required_norm_adjusted": 그 기준 파티가 실제로 썼던 직업/겜속까지
+          반영한 기준 (에너지감소·겜속·직업 반영 박스용). 이 필드가 없는 옛날
+          프로필은 자동으로 "ref_required_norm"(순수값)로 대체됨.
 
     Returns:
       ref_required_norm (float or None)
@@ -119,16 +125,19 @@ def compute_energy_limit_weighted(
     scored = []
     for p in profiles:
         ref_vec = p.get("ref_vec", {})
-        limit_norm = p.get("ref_required_norm", None)
+        limit_norm = p.get(norm_field, None)
+        if limit_norm is None:
+            # ✅ adjusted 필드가 없는 옛날 프로필은 순수값으로 대체(하위호환)
+            limit_norm = p.get("ref_required_norm", None)
         if not isinstance(ref_vec, dict) or len(ref_vec) == 0:
             continue
         if limit_norm is None:
             continue
         d = l1_distance(cur_vec, ref_vec)
-        scored.append((d, p))
+        scored.append((d, p, float(limit_norm)))
 
     if not scored:
-        return None, None, "profiles는 있는데 ref_vec/ref_required_norm이 유효한 항목이 없어요."
+        return None, None, "profiles는 있는데 ref_vec/기준값이 유효한 항목이 없어요."
 
     # 가까운 순 정렬 후 상위 k개만 사용
     scored.sort(key=lambda x: x[0])
@@ -136,22 +145,22 @@ def compute_energy_limit_weighted(
 
     # 가중치 계산
     weights = []
-    for d, p in top:
+    for d, p, limit_norm in top:
         w = 1.0 / ((d + eps) ** power)
-        weights.append((w, d, p))
+        weights.append((w, d, p, limit_norm))
 
-    wsum = sum(w for w, _, _ in weights)
+    wsum = sum(w for w, _, _, _ in weights)
     if wsum <= 0:
         return None, None, "가중치 합이 0이에요(거리 계산 확인 필요)."
 
-    ref_required_norm = sum(w * float(p["ref_required_norm"]) for w, _, p in weights) / wsum
+    ref_required_norm = sum(w * limit_norm for w, _, _, limit_norm in weights) / wsum
 
     used = []
-    for w, d, p in weights:
+    for w, d, p, limit_norm in weights:
         used.append({
             "ref_party": p.get("ref_party", ""),
             "label": p.get("label", ""),
-            "ref_required_norm": float(p.get("ref_required_norm", 0.0)),
+            "ref_required_norm": limit_norm,
             "dist": float(d),
             "weight": float(w / wsum),  # 정규화 가중치(합 1)
         })
@@ -173,6 +182,7 @@ def render_clear_judge_box(
     weight_power: float = 1.0,
     title: str = "정규화 클리어 판정",
     show_notice: bool = True,   # ✅ 추가
+    norm_field: str = "ref_required_norm",
 ):
     """
     party_type 선택 없음.
@@ -185,6 +195,7 @@ def render_clear_judge_box(
         party=party,
         k=k_profiles,
         power=weight_power,
+        norm_field=norm_field,
     )
 
     if err or ref_required_norm is None:
@@ -239,6 +250,7 @@ def judge_clear_for_table(
     party,             # ✅ List[Character]
     k_profiles: int = 5,
     weight_power: float = 1.0,
+    norm_field: str = "ref_required_norm",
 ):
     """
     탭2(비교 테이블)용: UI 없이 결과만 반환
@@ -248,6 +260,7 @@ def judge_clear_for_table(
         party=party,
         k=k_profiles,
         power=weight_power,
+        norm_field=norm_field,
     )
 
     required_energy = compute_required_energy(boss_hp, P)

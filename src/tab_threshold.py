@@ -7,19 +7,33 @@ from src.boss_limits_store import get_limits_store, save_limits
 # ✅ clear_judge.py에 아래 함수가 있어야 함:
 # - party_to_mp_share_vector(party) -> Dict[str, float]
 from src.clear_judge import party_to_mp_share_vector
+from src.jobs import build_job_assignments_from_text, resolve_job_per_instance
+from src.calculator import compute_async_dps_ratio
+from src.boss_config import (
+    GAME_SPEED_ALPHA_BY_BOSS,
+    DEFAULT_GAME_SPEED_ALPHA,
+    get_job_energy_alpha_by_job,
+)
 
 
 def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, admin_mode: bool = False):
     st.subheader("📌 파티사이클 클리어 여부 경계값 (정규화 적용)")
 
     # 보스 목록
-    BOSS_LIST = ["사마귀", "두억시니", "무쇠꾼", "크치뱀"]
+    BOSS_LIST = ["아수라", "사마귀", "두억시니", "무쇠꾼", "크치뱀"]
 
-    boss = st.selectbox("보스 선택", BOSS_LIST, index=3)
+    boss = st.selectbox("보스 선택", BOSS_LIST, index=0)
 
     st.markdown("### 조건")
     
     BOSS_CONDITIONS = {
+        "아수라": [
+            "주술 미루는 빌드에 능숙한 5인 파티",
+            "스젤많, 특정젤리떨어짐, 모든점수 2배 옵션 반영하지 않음",
+            "몬스터 방어력 약화/강화 옵션은 중복되지 않는다고 가정",
+            "빌드에 따른 스킬별 유불리사항을 반영하지않음"
+        ],
+
         "사마귀": [
             "게임속도 증가 없음",
             "보스 약화에 따른 딜량 증가를 반영하지 않음",
@@ -185,12 +199,44 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
             key=f"threshold_cycles_{boss}_{party_type_label}"
         )
 
+        st.markdown("#### 이 기준 파티가 실전에서 실제로 썼던 조건")
+        st.caption(
+            "⚠️ 중요: 위 '경계 파티사이클'은 이미 이 조건들이 반영된 실측값이에요. "
+            "여기에 그 실제 조건을 같이 적어두면, 나중에 다른 파티랑 비교할 때 "
+            "직업/겜속 보너스가 이중으로 계산되는 걸 막아줘요."
+        )
+
+        ref_job_text = st.text_input(
+            "이 기준 파티가 실제로 썼던 직업 구성 (없으면 비워두기)",
+            value="",
+            key=f"ref_job_text_{boss}_{party_type_label}",
+            help="예) 스+캡 회 1 스+연 회 3 스+석 회 1",
+        )
+
+        ref_game_speed_pct = st.number_input(
+            "이 기준 파티가 실제로 썼던 게임속도 증가율(%)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            key=f"ref_game_speed_{boss}_{party_type_label}",
+        )
+
+        ref_boss_hp_for_alpha = st.number_input(
+            "이 기준 파티가 클리어 당시 보스 체력(선택, 체력구간별 alpha 판정용)",
+            min_value=0.0,
+            value=0.0,
+            step=1_000_000.0,
+            format="%.0f",
+            key=f"ref_boss_hp_alpha_{boss}_{party_type_label}",
+            help="모르면 0으로 두면 됨(그러면 저체력 구간 alpha로 계산됨)",
+        )
+
         # ✅ 저장 버튼
         if st.button("✅ 이 보스 기준 프로필 저장(party_type 무시)", key=f"save_profile_{boss}_{party_type_label}"):
             try:
                 party = build_party_from_text(ref_party_text)
 
-                # 기준 파티 계산
+                # 기준 파티 계산 (순수, 직업/겜속 미반영)
                 total_dmg, total_dmg_per_mp_sum, total_mp, _, _, _ = calculate_party(
                     party=party,
                     common_damage_buff=common_damage_buff_pct / 100.0,
@@ -207,8 +253,34 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     raise ValueError("기준 파티의 P값이 0 이하입니다.")
                 
                 boss_hp_est = float(threshold_cycles) * float(total_dmg)   # ✅ 보스 체력(상대값) 추정
-                ref_required_norm = boss_hp_est / P                              # ✅ 정규화 기준(시간에 비례)
+                ref_required_norm = boss_hp_est / P                              # ✅ 정규화 기준(시간에 비례, 순수)
 
+                # ✅ 이 기준 파티가 "실제로 썼던" 직업/겜속을 반영한 adjusted 기준값도 계산
+                #    (이걸 안 만들면, 나중에 새 파티 조회할 때 직업/겜속 보너스가
+                #     기준값에 한 번(암묵적으로), 쿼리 계산에 또 한 번, 이중으로 들어감)
+                ref_job_assignments = build_job_assignments_from_text(ref_job_text)
+                ref_job_per_instance = resolve_job_per_instance(party, ref_job_assignments)
+
+                ref_alpha_map = get_job_energy_alpha_by_job(
+                    boss_name=boss,
+                    boss_hp_total=ref_boss_hp_for_alpha,
+                    party_size=len(party),
+                )
+                ref_speed_alpha = GAME_SPEED_ALPHA_BY_BOSS.get(boss, DEFAULT_GAME_SPEED_ALPHA)
+
+                ref_dps_ratio_async = compute_async_dps_ratio(
+                    party=party,
+                    common_damage_buff=common_damage_buff_pct / 100.0,
+                    stone_crit_buff=stone_crit_buff_pct / 100.0,
+                    weakness_bonus_by_color=weakness_bonus_by_color,
+                    energy_decrease_by_color=energy_decrease_by_color,
+                    job_per_instance=ref_job_per_instance,
+                    job_energy_alpha_by_job=ref_alpha_map,
+                    game_speed_buff=ref_game_speed_pct / 100.0,
+                    game_speed_alpha=ref_speed_alpha,
+                )
+
+                ref_required_norm_adjusted = ref_required_norm / ref_dps_ratio_async
 
                 store = get_limits_store()
                 store.setdefault(boss, {})
@@ -217,6 +289,7 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                 store[boss]["profiles"].append({
                     "boss_hp_est": float(boss_hp_est),
                     "ref_required_norm": float(ref_required_norm),
+                    "ref_required_norm_adjusted": float(ref_required_norm_adjusted),
                 
                     "ref_party": ref_party_text,
                     "ref_vec": ref_vec,
@@ -231,13 +304,24 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     "ref_stone_crit_buff_pct": stone_crit_buff_pct,
                     "ref_weakness_bonus_by_color": weakness_bonus_by_color,
                     "ref_energy_decrease_by_color": energy_decrease_by_color,
+
+                    # 이 기준 파티가 실제로 썼던 조건 (adjusted 계산의 근거)
+                    "ref_job_text": ref_job_text,
+                    "ref_game_speed_pct": float(ref_game_speed_pct),
+                    "ref_boss_hp_for_alpha": float(ref_boss_hp_for_alpha),
+                    "ref_dps_ratio_async": float(ref_dps_ratio_async),
                 })
                 
                 save_limits(store)
                 
-                st.success(f"저장 완료! (ref_required_norm = {ref_required_norm:,.2f}, boss_hp_est = {boss_hp_est:,.0f})")
+                st.success(
+                    f"저장 완료! (ref_required_norm(순수) = {ref_required_norm:,.2f}, "
+                    f"ref_required_norm_adjusted = {ref_required_norm_adjusted:,.2f}, "
+                    f"boss_hp_est = {boss_hp_est:,.0f})"
+                )
                 st.caption(f"- 기준 파티 1사이클 총 MP = {total_mp:,}")
                 st.caption(f"- 기준 파티 P(Σ(dmg/eff_mp)) = {total_dmg_per_mp_sum:,.2f}")
+                st.caption(f"- 기준 파티 실제 dps_ratio_async(직업/겜속 반영) = {ref_dps_ratio_async:.4f}")
 
             except Exception as e:
                 st.error(str(e))
@@ -258,7 +342,8 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                 options=list(range(len(profs))),
                 format_func=lambda i: (
                     f"{i+1}. [{profs[i].get('label','-')}] "
-                    f"ref_required_norm={float(profs[i].get('ref_required_norm',0)):,.2f} | "
+                    f"norm={float(profs[i].get('ref_required_norm',0)):,.2f} | "
+                    f"norm_adj={float(profs[i].get('ref_required_norm_adjusted', profs[i].get('ref_required_norm',0))):,.2f} | "
                     f"boss_hp_est={float(profs[i].get('boss_hp_est',0)):,.0f} | "
                     f"{profs[i].get('ref_party','')}"
                 ),
@@ -284,7 +369,11 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
             st.caption(f"최근 {show_n}개만 표시")
             for i, p in enumerate(profs[-show_n:], start=max(1, len(profs) - show_n + 1)):
                 st.write(
-                    f"{i}. [{p.get('label','-')}] ref_required_norm={float(p.get('ref_required_norm',0)):,.2f} | boss_hp_est={float(p.get('boss_hp_est',0)):,.0f} | 기준파티=`{p.get('ref_party','')}`"
+                    f"{i}. [{p.get('label','-')}] norm={float(p.get('ref_required_norm',0)):,.2f} | "
+                    f"norm_adj={float(p.get('ref_required_norm_adjusted', p.get('ref_required_norm',0))):,.2f} | "
+                    f"boss_hp_est={float(p.get('boss_hp_est',0)):,.0f} | 기준파티=`{p.get('ref_party','')}`"
+                    + (f" | 직업=`{p.get('ref_job_text','')}`" if p.get('ref_job_text') else "")
+                    + (f" | 겜속={p.get('ref_game_speed_pct',0):.0f}%" if p.get('ref_game_speed_pct') else "")
                 )
         else:
             st.info("아직 저장된 프로필이 없어요. 위에서 저장해줘.")
