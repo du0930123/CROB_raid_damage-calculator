@@ -117,8 +117,8 @@ def render_single_party_tab():
         )
 
         job_text = st.text_input(
-            "파티원 직업 구성 (같은 캐릭터도 장마다 다른 직업 가능)",
-            value="",
+            "파티원 직업 구성 (석공같은 아예 버프류로 이루어진건 적지 마셈)",
+            value="스+캡 회 1 스+연 회 3",
             key="tab1_job_text",
             help=(
                 f"직업 종류: {', '.join(JOB_OPTIONS)} (방/젤/회 로 줄여써도 인식됨) / "
