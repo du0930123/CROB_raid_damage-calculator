@@ -58,7 +58,7 @@ def render_single_party_tab():
 
     party_text = st.text_input(
         "파티구성 + 직업구성",
-        value="스네이크 3 캡틴아이스 1",
+        value="스+캡 회 1",
     )
 
     weakness_colors = st.multiselect("보스 약점 색 선택 (최대 2개)", options=COLOR_OPTIONS, default=[])
