@@ -150,6 +150,30 @@
         },
         "ref_weakness_bonus_by_color": {},
         "threshold_cycles": 171
+      },
+      {
+        "boss_hp_est": 20734889799.999996,
+        "is_hp_ceiling_anchor": true,
+        "label": "노랑(주로 스네 구성)",
+        "ref_P": 397332.90460526315,
+        "ref_boss_hp_for_alpha": 42000000000.0,
+        "ref_common_damage_buff_pct": 0.0,
+        "ref_dps_ratio_async": 1.0330456399898589,
+        "ref_energy_decrease_by_color": {},
+        "ref_game_speed_pct": 0.0,
+        "ref_job_text": "스+연 젤 1 스+캡 회 1 스+연 회 2",
+        "ref_party": "스네이크 4 캡 1",
+        "ref_required_norm": 52185.18164409114,
+        "ref_required_norm_adjusted": 50515.852953605645,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 152462424.99999997,
+        "ref_total_mp": 1920,
+        "ref_vec": {
+          "스네이크": 0.7916666666666666,
+          "캡틴아이스": 0.20833333333333334
+        },
+        "ref_weakness_bonus_by_color": {},
+        "threshold_cycles": 136
       }
     ]
   },
