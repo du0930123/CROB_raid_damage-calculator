@@ -184,6 +184,33 @@
           "빨강": 0.0
         },
         "threshold_cycles": 173
+      },
+      {
+        "anchor_ceiling_hp": 0.0,
+        "boss_hp_est": 44599449180.0,
+        "is_hp_ceiling_anchor": true,
+        "label": "파랑(눈설탕, 캡아 구성)",
+        "ref_P": 857681.715,
+        "ref_boss_hp_for_alpha": 41787878400.0,
+        "ref_common_damage_buff_pct": 72.0,
+        "ref_dps_ratio_async": 1.10230627,
+        "ref_energy_decrease_by_color": {},
+        "ref_game_speed_pct": 30.0,
+        "ref_job_text": "캡+연 회 3 캡+공 회 1 레+석 회 1",
+        "ref_party": "캡 4 레 1",
+        "ref_required_norm": 48721.89492812028,
+        "ref_required_norm_adjusted": 44199.96171129488,
+        "ref_stone_crit_buff_pct": 78.0,
+        "ref_total_dmg": 343072686.0,
+        "ref_total_mp": 2000,
+        "ref_vec": {
+          "레판": 0.2,
+          "캡틴아이스": 0.8
+        },
+        "ref_weakness_bonus_by_color": {
+          "파랑": 0.0
+        },
+        "threshold_cycles": 130
       }
     ]
   },
