@@ -469,19 +469,6 @@ def _render_boss_hp_result(
         or any(j is not None for j in job_per_instance)
     )
 
-    render_clear_judge_box(
-        boss=selected_boss,
-        boss_hp=effective_boss_hp,
-        P=total_dmg_per_mp_sum,
-        party=party,
-        key_prefix="tab1_judge_base",
-        show_match_info=False,
-        k_profiles=5,
-        weight_power=1.0,
-        title="정규화 클리어 판정 (순수, 보정 없음)",
-        show_notice=True,
-        tier_boss_hp=base_boss_hp,
-    )
 
     if show_async_block:
         st.markdown("---")
