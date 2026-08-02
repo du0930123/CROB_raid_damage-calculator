@@ -331,16 +331,6 @@ def _calculate_compare_row(
     p_base = total_dmg_per_mp_sum
     p_effective_cmp = total_dmg_per_mp_sum * dps_ratio_async
 
-    judge_cols_base = judge_clear_for_table(
-        boss=selected_boss_cmp,
-        boss_hp=effective_boss_hp_cmp,
-        P=p_base,
-        party=party,
-        k_profiles=5,
-        weight_power=1.0,
-        tier_boss_hp=base_boss_hp_cmp,
-    )
-
     judge_cols_speed = judge_clear_for_table(
         boss=selected_boss_cmp,
         boss_hp=effective_boss_hp_cmp,
@@ -349,6 +339,7 @@ def _calculate_compare_row(
         k_profiles=5,
         weight_power=1.0,
         tier_boss_hp=base_boss_hp_cmp,
+        norm_field="ref_required_norm_adjusted",
     )
 
     cycles = math.ceil(effective_boss_hp_cmp / total_dmg) if total_dmg > 0 else 0
@@ -363,12 +354,8 @@ def _calculate_compare_row(
     return {
         "파티 구성": display_party_text,
         "직업(감지됨)": line if any(j is not None for j in job_per_instance) else "-",
-        "겜속 미반영 판정": judge_cols_base.get("정규화판정"),
-        "겜속 미반영 여유율%": judge_cols_base.get("여유율"),
         "반영 판정": judge_cols_speed.get("정규화판정"),
         "반영 여유율%": judge_cols_speed.get("여유율"),
-        "기준 ref_required_norm": judge_cols_base.get("ref_required_norm(가중평균)"),
-        "미반영 필요총에너지": judge_cols_base.get("필요총에너지(boss_hp/P)"),
         "반영 필요총에너지": judge_cols_speed.get("필요총에너지(boss_hp/P)"),
         "약점 적용": _format_weakness_text(weakness_bonus_by_color_cmp),
         "(비동기합산) 실효 딜 변화율%": float(f"{dps_drop_async_pct:+.2f}"),
