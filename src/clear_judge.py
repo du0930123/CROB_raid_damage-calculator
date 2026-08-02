@@ -1,6 +1,15 @@
 import streamlit as st
 from typing import Dict, Tuple, Optional, Any, List
 
+from src.party_parser import build_party_from_text
+from src.jobs import build_job_assignments_from_text, resolve_job_per_instance
+from src.calculator import compute_async_dps_ratio
+from src.boss_config import (
+    GAME_SPEED_ALPHA_BY_BOSS,
+    DEFAULT_GAME_SPEED_ALPHA,
+    get_job_energy_alpha_by_job,
+)
+
 
 # ----------------------------
 # 세션 저장소 접근
@@ -88,6 +97,68 @@ def _get_boss_profiles(boss: str) -> List[Dict[str, Any]]:
     return []
 
 
+def _recompute_adjusted_norm(p: Dict[str, Any], boss: str) -> Optional[float]:
+    """
+    ✅ ref_required_norm_adjusted를 "저장된 값"이 아니라 매번 새로 계산한다.
+
+    왜 필요하냐면: alpha(직업 에너지 감쇠, 게임속도 alpha 등)를 나중에 튜닝해서
+    바꿀 수 있는데, 프로필 저장 시점에 "그때의 alpha"로 계산해서 박아둔 값을
+    그대로 쓰면, alpha를 바꾼 뒤엔 기준값이 낡은(stale) 상태로 남아서
+    새 쿼리(최신 alpha 적용)랑 공정하게 비교가 안 됨.
+
+    그래서 프로필에 저장해둔 "원본 재료"(ref_party, ref_job_text,
+    ref_game_speed_pct, ref_required_norm 등)로, 지금 이 순간의 alpha 설정을
+    이용해 dps_ratio_async를 다시 계산하고, ref_required_norm_adjusted를
+    그 자리에서 새로 뽑아낸다.
+
+    재계산에 필요한 정보가 없으면(예: 옛날 프로필) None을 리턴해서
+    호출부가 저장된 값 -> 순수값 순으로 폴백하게 함.
+    """
+    try:
+        ref_required_norm = p.get("ref_required_norm")
+        if ref_required_norm is None:
+            return None
+
+        ref_party_text = p.get("ref_party", "")
+        if not ref_party_text:
+            return None
+
+        party = build_party_from_text(ref_party_text)
+
+        ref_job_text = (p.get("ref_job_text") or "").strip()
+        if ref_job_text:
+            job_assignments = build_job_assignments_from_text(ref_job_text)
+            job_per_instance = resolve_job_per_instance(party, job_assignments)
+        else:
+            job_per_instance = [None] * len(party)
+
+        alpha_map = get_job_energy_alpha_by_job(
+            boss_name=boss,
+            boss_hp_total=float(p.get("ref_boss_hp_for_alpha", 0.0) or 0.0),
+            party_size=len(party),
+        )
+        speed_alpha = GAME_SPEED_ALPHA_BY_BOSS.get(boss, DEFAULT_GAME_SPEED_ALPHA)
+
+        dps_ratio = compute_async_dps_ratio(
+            party=party,
+            common_damage_buff=float(p.get("ref_common_damage_buff_pct", 0.0) or 0.0) / 100.0,
+            stone_crit_buff=float(p.get("ref_stone_crit_buff_pct", 0.0) or 0.0) / 100.0,
+            weakness_bonus_by_color=p.get("ref_weakness_bonus_by_color", {}) or {},
+            energy_decrease_by_color=p.get("ref_energy_decrease_by_color", {}) or {},
+            job_per_instance=job_per_instance,
+            job_energy_alpha_by_job=alpha_map,
+            game_speed_buff=float(p.get("ref_game_speed_pct", 0.0) or 0.0) / 100.0,
+            game_speed_alpha=speed_alpha,
+        )
+
+        if dps_ratio is None or dps_ratio <= 0:
+            return None
+
+        return float(ref_required_norm) / dps_ratio
+    except Exception:
+        return None
+
+
 def compute_energy_limit_weighted(
     boss: str,
     party,
@@ -151,10 +222,21 @@ def compute_energy_limit_weighted(
     scored = []
     for p in profiles:
         ref_vec = p.get("ref_vec", {})
-        limit_norm = p.get(norm_field, None)
-        if limit_norm is None:
-            # ✅ adjusted 필드가 없는 옛날 프로필은 순수값으로 대체(하위호환)
-            limit_norm = p.get("ref_required_norm", None)
+
+        if norm_field == "ref_required_norm_adjusted":
+            # ✅ 저장된 값 대신 "지금" alpha로 매번 새로 계산 (staleness 방지)
+            limit_norm = _recompute_adjusted_norm(p, boss)
+            if limit_norm is None:
+                # 재계산 불가(옛날 프로필 등)면 저장된 값 -> 순수값 순으로 폴백
+                limit_norm = p.get("ref_required_norm_adjusted", None)
+                if limit_norm is None:
+                    limit_norm = p.get("ref_required_norm", None)
+        else:
+            limit_norm = p.get(norm_field, None)
+            if limit_norm is None:
+                # ✅ adjusted 필드가 없는 옛날 프로필은 순수값으로 대체(하위호환)
+                limit_norm = p.get("ref_required_norm", None)
+
         if not isinstance(ref_vec, dict) or len(ref_vec) == 0:
             continue
         if limit_norm is None:
