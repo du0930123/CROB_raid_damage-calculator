@@ -3,6 +3,7 @@ import json
 import streamlit as st
 from typing import Dict, Any
 from src.boss_limits_store import get_limits_store, save_limits
+from src.constants import COLOR_OPTIONS
 
 # ✅ clear_judge.py에 아래 함수가 있어야 함:
 # - party_to_mp_share_vector(party) -> Dict[str, float]
@@ -154,12 +155,6 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
         st.caption("관리자가 기준 파티/경계 사이클을 저장하면 boss_limits.json에 반영되어 모든 접속자에게 동일하게 적용돼요.")
         st.caption("※ 저장은 party_type을 '분류로 쓰지 않고', 보스별 profiles 풀에 누적 저장됩니다. (판정 시 자동 거리/가중치로 사용)")
 
-        calc_opts = st.session_state.get("LAST_CALC_OPTS", {})
-        common_damage_buff_pct = float(calc_opts.get("common_damage_buff_pct", 0.0))
-        stone_crit_buff_pct = float(calc_opts.get("stone_crit_buff_pct", 0.0))
-        weakness_bonus_by_color = dict(calc_opts.get("weakness_bonus_by_color", {}))
-        energy_decrease_by_color = dict(calc_opts.get("energy_decrease_by_color", {}))
-
         # 기준 파티 기본값(라벨에 따라 추천만)
         default_party = {
             "빨강(주로 비트 구성)": "비트 1 레판 4",
@@ -205,6 +200,58 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
             "여기에 그 실제 조건을 같이 적어두면, 나중에 다른 파티랑 비교할 때 "
             "직업/겜속 보너스가 이중으로 계산되는 걸 막아줘요."
         )
+        st.caption(
+            "🆕 아래 버프 항목들은 이제 여기서 **직접 입력**해요 (예전엔 '단일 파티 계산' 탭에서 "
+            "마지막으로 계산했던 값을 몰래 그대로 가져다 썼는데, 관리자가 인지 못 하고 "
+            "엉뚱한 값이 저장될 수 있어서 없앴습니다)."
+        )
+
+        col_buff1, col_buff2 = st.columns(2)
+        with col_buff1:
+            common_damage_buff_pct = st.number_input(
+                "이 기준 파티가 실제로 썼던 공통 피해증가율(%)",
+                min_value=0.0,
+                value=0.0,
+                step=1.0,
+                key=f"ref_common_buff_{boss}_{party_type_label}",
+            )
+        with col_buff2:
+            stone_crit_buff_pct = st.number_input(
+                "이 기준 파티가 실제로 썼던 치명타 피해 증가율(%)",
+                min_value=0.0,
+                value=0.0,
+                step=1.0,
+                key=f"ref_crit_buff_{boss}_{party_type_label}",
+            )
+
+        ref_weakness_colors = st.multiselect(
+            "이 기준 파티가 실제로 받았던 약점 색 (최대 2개)",
+            options=COLOR_OPTIONS,
+            default=[],
+            key=f"ref_weakness_colors_{boss}_{party_type_label}",
+        )
+        weakness_bonus_by_color: Dict[str, float] = {}
+        for wc in ref_weakness_colors:
+            wc_pct = st.number_input(
+                f"{wc} 색깔만의 조건부 피해증감율(%)",
+                value=0.0,
+                step=1.0,
+                key=f"ref_weakness_pct_{boss}_{party_type_label}_{wc}",
+            )
+            weakness_bonus_by_color[wc] = wc_pct / 100.0
+
+        energy_decrease_by_color: Dict[str, float] = {}
+        with st.expander("색상별 에너지 획득량 증감 (필요할 때만 펼치기)", expanded=False):
+            for c in COLOR_OPTIONS:
+                c_on = st.checkbox(f"{c} 에너지 획득량 증감 적용", key=f"ref_energy_on_{boss}_{party_type_label}_{c}")
+                if c_on:
+                    c_pct = st.number_input(
+                        f"{c} 에너지 획득량 증감(%) (+면 증가, -면 감소)",
+                        value=0.0,
+                        step=1.0,
+                        key=f"ref_energy_pct_{boss}_{party_type_label}_{c}",
+                    )
+                    energy_decrease_by_color[c] = -c_pct / 100.0
 
         ref_job_text = st.text_input(
             "이 기준 파티가 실제로 썼던 직업 구성 (없으면 비워두기)",
@@ -234,8 +281,8 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
         st.markdown("#### 🆕 체력 임계값 앵커 지정")
         st.caption(
             "이 프로필을 '체력 임계값 앵커'로 지정하면, 조회하는 보스 체력이 "
-            "**이 프로필의 boss_hp_est 이하일 때, 그 이하 체력의 프로필들로만 좁혀서** "
-            "비교해요. (예: 700레벨부터 난이도가 급변하는데, 그 직전(699)의 "
+            "**이 앵커가 담당하는 체력 상한 이하일 때, 그 이하 체력의 프로필들로만 좁혀서** "
+            "비교해요. (예: 700레벨부터 난이도가 급변하는데, 그 직전의 "
             "빡빡하게 깬 돌을 앵커로 지정하면, 그보다 체력 낮은 돌들은 이 프로필 "
             "위주로 비교됨 — 위쪽 티어의 쉬운/어려운 프로필과 안 섞임)"
         )
@@ -243,6 +290,25 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
             "이 프로필을 체력 임계값 앵커로 지정",
             key=f"hp_anchor_{boss}_{party_type_label}",
         )
+
+        anchor_ceiling_hp = 0.0
+        if is_hp_ceiling_anchor:
+            anchor_ceiling_hp = st.number_input(
+                "이 앵커가 담당하는 체력 상한선 (비워두면 이 프로필 자체의 실제 체력을 상한으로 씀)",
+                min_value=0.0,
+                value=0.0,
+                step=1_000_000.0,
+                format="%.0f",
+                key=f"anchor_ceiling_{boss}_{party_type_label}",
+                help=(
+                    "⚠️ 이 프로필 '자신'의 체력과 다른 값이어도 됨. "
+                    "예: 이 프로필이 700레벨 돌(체력 42,000,000,000)인데, "
+                    "701~705레벨까지도 같은 메커니즘이라고 판단되면, "
+                    "여기에 705레벨의 예상 체력(더 큰 숫자)을 넣어서 "
+                    "그 범위까지 이 앵커가 계속 담당하게 만들 수 있음. "
+                    "0으로 두면 이 프로필 자체의 체력이 상한이 됨(기존 동작과 동일)."
+                ),
+            )
 
         # ✅ 저장 버튼
         if st.button("✅ 이 보스 기준 프로필 저장(party_type 무시)", key=f"save_profile_{boss}_{party_type_label}"):
@@ -265,8 +331,16 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                 if P <= 0:
                     raise ValueError("기준 파티의 P값이 0 이하입니다.")
                 
-                boss_hp_est = float(threshold_cycles) * float(total_dmg)   # ✅ 보스 체력(상대값) 추정
-                ref_required_norm = boss_hp_est / P                              # ✅ 정규화 기준(시간에 비례, 순수)
+                boss_hp_est = float(threshold_cycles) * float(total_dmg)   # ✅ 보스 체력(상대값) 추정 (참고용)
+
+                # ✅ "실제 보스체력"(ref_boss_hp_for_alpha)을 입력했으면 그걸로 계산
+                #    (tab1 조회 때 required_energy = 실제입력체력/P 와 완전히 같은 공식이 되어야
+                #     같은 조건으로 저장/조회했을 때 여유율이 0%에 수렴함). 안 입력했으면(0)
+                #    기존처럼 boss_hp_est(파티사이클 기반 추정)로 폴백.
+                if ref_boss_hp_for_alpha and float(ref_boss_hp_for_alpha) > 0:
+                    ref_required_norm = float(ref_boss_hp_for_alpha) / P
+                else:
+                    ref_required_norm = boss_hp_est / P
 
                 # ✅ 이 기준 파티가 "실제로 썼던" 직업/겜속을 반영한 adjusted 기준값도 계산
                 #    (이걸 안 만들면, 나중에 새 파티 조회할 때 직업/겜속 보너스가
@@ -324,8 +398,9 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     "ref_boss_hp_for_alpha": float(ref_boss_hp_for_alpha),
                     "ref_dps_ratio_async": float(ref_dps_ratio_async),
 
-                    # 🆕 체력 임계값 앵커 여부
+                    # 🆕 체력 임계값 앵커 여부 + 담당 상한선
                     "is_hp_ceiling_anchor": bool(is_hp_ceiling_anchor),
+                    "anchor_ceiling_hp": float(anchor_ceiling_hp),
                 })
                 
                 save_limits(store)
@@ -334,7 +409,13 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     f"저장 완료! (ref_required_norm(순수) = {ref_required_norm:,.2f}, "
                     f"ref_required_norm_adjusted = {ref_required_norm_adjusted:,.2f}, "
                     f"boss_hp_est = {boss_hp_est:,.0f}"
-                    + (", 🆕 체력 임계값 앵커로 지정됨" if is_hp_ceiling_anchor else "")
+                    + (
+                        f", 🆕 체력 임계값 앵커로 지정됨 (담당 상한: {anchor_ceiling_hp:,.0f})"
+                        if is_hp_ceiling_anchor and anchor_ceiling_hp > 0
+                        else ", 🆕 체력 임계값 앵커로 지정됨 (담당 상한 = 이 프로필 자체 체력)"
+                        if is_hp_ceiling_anchor
+                        else ""
+                    )
                     + ")"
                 )
                 st.caption(f"- 기준 파티 1사이클 총 MP = {total_mp:,}")
@@ -392,7 +473,13 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     f"boss_hp_est={float(p.get('boss_hp_est',0)):,.0f} | 기준파티=`{p.get('ref_party','')}`"
                     + (f" | 직업=`{p.get('ref_job_text','')}`" if p.get('ref_job_text') else "")
                     + (f" | 겜속={p.get('ref_game_speed_pct',0):.0f}%" if p.get('ref_game_speed_pct') else "")
-                    + (" | 🆕**체력임계값앵커**" if p.get('is_hp_ceiling_anchor') else "")
+                    + (
+                        f" | 🆕**체력임계값앵커**(담당상한={float(p.get('anchor_ceiling_hp',0)):,.0f})"
+                        if p.get('is_hp_ceiling_anchor') and float(p.get('anchor_ceiling_hp', 0) or 0) > 0
+                        else " | 🆕**체력임계값앵커**(담당상한=자체체력)"
+                        if p.get('is_hp_ceiling_anchor')
+                        else ""
+                    )
                 )
         else:
             st.info("아직 저장된 프로필이 없어요. 위에서 저장해줘.")
