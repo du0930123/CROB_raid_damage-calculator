@@ -195,9 +195,13 @@ def compute_energy_limit_weighted(
     if not profiles:
         return None, None, "선택한 보스에 저장된 profiles가 없어요(탭3 관리자 저장 필요)."
 
-    # ✅ 체력 임계값 앵커 필터링
-    #    query_boss_hp보다 큰(같거나 큰) boss_hp_est를 가진 "앵커" 프로필들 중
-    #    가장 작은 걸 찾아서(=바로 위 티어 경계), 그 이하 프로필로만 후보를 좁힘
+    # ✅ 체력 임계값 앵커 필터링 (양방향)
+    #    1) query_boss_hp가 어떤 앵커의 boss_hp_est 이하면
+    #       -> 그 앵커(중 가장 낮은 티어 경계) 이하 프로필로만 후보를 좁힘
+    #    2) query_boss_hp가 모든 앵커보다 높으면
+    #       -> 그 앵커(하위 티어 기준)들은 아예 후보에서 제외
+    #          (앵커가 아닌 일반 프로필만 남으면 그걸로 매칭, 하나도 안 남으면
+    #           안전하게 전체 프로필로 폴백)
     if query_boss_hp is not None:
         anchors = [
             p for p in profiles
@@ -214,6 +218,12 @@ def compute_energy_limit_weighted(
             ]
             if filtered:
                 profiles = filtered
+        elif anchors:
+            # 쿼리가 존재하는 모든 앵커보다 체력이 높음 -> 앵커(하위 티어) 프로필 제외
+            non_anchor_profiles = [p for p in profiles if not p.get("is_hp_ceiling_anchor")]
+            if non_anchor_profiles:
+                profiles = non_anchor_profiles
+            # non_anchor_profiles가 하나도 없으면(=앵커만 있으면) 안전하게 전체 유지(폴백)
 
     cur_vec = party_to_mp_share_vector(party)
     if not cur_vec:
