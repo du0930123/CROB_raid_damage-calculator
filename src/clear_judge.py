@@ -300,6 +300,7 @@ def render_clear_judge_box(
     weight_power: float = 1.0,
     title: str = "정규화 클리어 판정",
     show_notice: bool = True,   # ✅ 추가
+    notice_text: Optional[str] = None,   # 🆕 안내 박스 문구 커스터마이즈
     norm_field: str = "ref_required_norm",
     tier_boss_hp: Optional[float] = None,
 ):
@@ -330,8 +331,12 @@ def render_clear_judge_box(
     clear_ok, required_energy, margin_pct = judge_clear(boss_hp=boss_hp, P=P, ref_required_norm=ref_required_norm)
 
     if show_notice:
+        notice_html = notice_text or (
+            "빌드, 겜속, 돌 색에따라 클리어여부 달라짐<br>"
+            "700이상은 모점2배나 겜속30 있어야 0페넘어감"
+        )
         st.markdown(
-            """
+            f"""
             <div style="
                 margin-top: 12px;
                 margin-bottom: 12px;
@@ -345,8 +350,7 @@ def render_clear_judge_box(
                 text-align: center;
                 line-height: 1.5;
             ">
-                빌드, 겜속, 돌 색에따라 클리어여부 달라짐<br>
-                700이상은 모점2배나 겜속30 있어야 0페넘어감
+                {notice_html}
             </div>
             """,
             unsafe_allow_html=True
