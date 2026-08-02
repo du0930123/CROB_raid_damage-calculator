@@ -97,6 +97,25 @@ def _get_boss_profiles(boss: str) -> List[Dict[str, Any]]:
     return []
 
 
+def _get_raw_norm(p: Dict[str, Any]) -> Optional[float]:
+    """
+    ✅ ref_required_norm(순수 기준값) = 저장 시 입력한 "실제 보스체력"(ref_boss_hp_for_alpha) ÷ ref_P
+
+    tab1에서 조회할 때 required_energy = 실제입력체력 ÷ P 로 계산하는 것과
+    "완전히 같은 공식"이어야, 저장한 프로필과 100% 동일한 조건으로 조회했을 때
+    정확히 0%에 수렴함. (boss_hp_est=threshold_cycles×total_dmg 는 별개의
+    추정치라서 실제체력과 어긋날 수 있어 여기 쓰면 안 됨)
+
+    ref_boss_hp_for_alpha나 ref_P가 없으면(옛날 프로필, 실제체력 미입력) 저장된
+    ref_required_norm(boss_hp_est 기반)으로 폴백.
+    """
+    ref_p = p.get("ref_P")
+    real_hp = p.get("ref_boss_hp_for_alpha")
+    if ref_p is not None and real_hp is not None and float(ref_p) > 0 and float(real_hp) > 0:
+        return float(real_hp) / float(ref_p)
+    return p.get("ref_required_norm")
+
+
 def _recompute_adjusted_norm(p: Dict[str, Any], boss: str) -> Optional[float]:
     """
     ✅ ref_required_norm_adjusted를 "저장된 값"이 아니라 매번 새로 계산한다.
@@ -115,7 +134,7 @@ def _recompute_adjusted_norm(p: Dict[str, Any], boss: str) -> Optional[float]:
     호출부가 저장된 값 -> 순수값 순으로 폴백하게 함.
     """
     try:
-        ref_required_norm = p.get("ref_required_norm")
+        ref_required_norm = _get_raw_norm(p)
         if ref_required_norm is None:
             return None
 
@@ -196,30 +215,54 @@ def compute_energy_limit_weighted(
         return None, None, "선택한 보스에 저장된 profiles가 없어요(탭3 관리자 저장 필요)."
 
     # ✅ 체력 임계값 앵커 필터링 (양방향)
-    #    1) query_boss_hp가 어떤 앵커의 boss_hp_est 이하면
-    #       -> 그 앵커(중 가장 낮은 티어 경계) 이하 프로필로만 후보를 좁힘
-    #    2) query_boss_hp가 모든 앵커보다 높으면
+    #    ⚠️ 앵커 경계는 boss_hp_est(추정값 = 사이클수×딜량) 대신,
+    #       프로필 저장 시 입력한 "실제 보스 체력"(ref_boss_hp_for_alpha)을 우선 사용함.
+    #       boss_hp_est는 실측 사이클로 역산한 추정치라, 화면에 뜨는 진짜 체력
+    #       숫자와 오차가 생길 수 있어서 경계 판정용으론 부정확할 수 있음.
+    #       ref_boss_hp_for_alpha가 없으면(0 이하) boss_hp_est로 폴백.
+    #    🆕 "앵커가 담당하는 체력 상한선"(anchor_ceiling_hp)은 앵커 자신의 실제
+    #       체력과 다를 수 있음. 예: 700레벨 돌을 앵커로 잡았는데, 701~705레벨까지도
+    #       같은 메커니즘이라고 판단되면, 앵커 자신의 체력(예: 420억)보다 더 큰
+    #       상한선(예: 450억)을 따로 지정해서, 그 범위까지 이 앵커가 계속 담당하게
+    #       할 수 있음. 지정 안 하면(0 이하) 앵커 자신의 체력을 상한으로 씀.
+    #    1) query_boss_hp가 어떤 앵커의 담당 상한선 이하면
+    #       -> 그 앵커(중 가장 낮은 상한선) 이하 프로필로만 후보를 좁힘
+    #    2) query_boss_hp가 모든 앵커의 담당 상한선보다 높으면
     #       -> 그 앵커(하위 티어 기준)들은 아예 후보에서 제외
     #          (앵커가 아닌 일반 프로필만 남으면 그걸로 매칭, 하나도 안 남으면
     #           안전하게 전체 프로필로 폴백)
+    def _tier_hp(prof):
+        # ✅ 앵커 "경계 판정"에만 실제 보스체력(ref_boss_hp_for_alpha)을 우선 사용.
+        #    (여유율 계산 자체(ref_required_norm)는 boss_hp_est 그대로 씀 - 별개!)
+        v = prof.get("ref_boss_hp_for_alpha")
+        if v is not None and float(v) > 0:
+            return float(v)
+        return prof.get("boss_hp_est")
+
+    def _anchor_ceiling(prof):
+        ceiling_hp = prof.get("anchor_ceiling_hp")
+        if ceiling_hp is not None and float(ceiling_hp) > 0:
+            return float(ceiling_hp)
+        return _tier_hp(prof)
+
     if query_boss_hp is not None:
         anchors = [
             p for p in profiles
-            if p.get("is_hp_ceiling_anchor") and p.get("boss_hp_est") is not None
+            if p.get("is_hp_ceiling_anchor") and _anchor_ceiling(p) is not None
         ]
         applicable_anchors = [
-            p for p in anchors if float(p["boss_hp_est"]) >= float(query_boss_hp)
+            p for p in anchors if _anchor_ceiling(p) >= float(query_boss_hp)
         ]
         if applicable_anchors:
-            ceiling = min(float(p["boss_hp_est"]) for p in applicable_anchors)
+            ceiling = min(_anchor_ceiling(p) for p in applicable_anchors)
             filtered = [
                 p for p in profiles
-                if p.get("boss_hp_est") is not None and float(p["boss_hp_est"]) <= ceiling
+                if _tier_hp(p) is not None and _tier_hp(p) <= ceiling
             ]
             if filtered:
                 profiles = filtered
         elif anchors:
-            # 쿼리가 존재하는 모든 앵커보다 체력이 높음 -> 앵커(하위 티어) 프로필 제외
+            # 쿼리가 존재하는 모든 앵커의 담당 상한선보다 체력이 높음 -> 앵커(하위 티어) 프로필 제외
             non_anchor_profiles = [p for p in profiles if not p.get("is_hp_ceiling_anchor")]
             if non_anchor_profiles:
                 profiles = non_anchor_profiles
@@ -240,12 +283,10 @@ def compute_energy_limit_weighted(
                 # 재계산 불가(옛날 프로필 등)면 저장된 값 -> 순수값 순으로 폴백
                 limit_norm = p.get("ref_required_norm_adjusted", None)
                 if limit_norm is None:
-                    limit_norm = p.get("ref_required_norm", None)
+                    limit_norm = _get_raw_norm(p)
         else:
-            limit_norm = p.get(norm_field, None)
-            if limit_norm is None:
-                # ✅ adjusted 필드가 없는 옛날 프로필은 순수값으로 대체(하위호환)
-                limit_norm = p.get("ref_required_norm", None)
+            # ✅ 순수 기준값도 저장된 값 대신, 실제 보스체력 기준으로 재계산
+            limit_norm = _get_raw_norm(p)
 
         if not isinstance(ref_vec, dict) or len(ref_vec) == 0:
             continue
