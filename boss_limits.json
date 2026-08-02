@@ -211,6 +211,33 @@
           "파랑": 0.0
         },
         "threshold_cycles": 130
+      },
+      {
+        "anchor_ceiling_hp": 0.0,
+        "boss_hp_est": 57849453375.0,
+        "is_hp_ceiling_anchor": false,
+        "label": "파랑(눈설탕, 캡아 구성)",
+        "ref_P": 959732.7618243243,
+        "ref_boss_hp_for_alpha": 57651512320.0,
+        "ref_common_damage_buff_pct": 72.0,
+        "ref_dps_ratio_async": 1.10230627,
+        "ref_energy_decrease_by_color": {},
+        "ref_game_speed_pct": 30.0,
+        "ref_job_text": "눈+캡 회 1 눈+연 회 3 눈+공 회 1",
+        "ref_party": "눈 5 캡 1",
+        "ref_required_norm": 60070.38064472463,
+        "ref_required_norm_adjusted": 54495.18185605951,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 359313375.0,
+        "ref_total_mp": 2250,
+        "ref_vec": {
+          "눈설탕": 0.8222222222222222,
+          "캡틴아이스": 0.17777777777777778
+        },
+        "ref_weakness_bonus_by_color": {
+          "파랑": 0.0
+        },
+        "threshold_cycles": 161
       }
     ]
   },
