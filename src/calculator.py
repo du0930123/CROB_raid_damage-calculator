@@ -3,7 +3,8 @@ from typing import Dict, List, Optional
 
 from src.characters import Character
 from src.stones import combine_energy_color_effect, job_damage_bonus_for_instance
-from src.jobs import job_speed_ratio_for_instance
+from src.jobs import job_speed_ratio_for_instance, job_energy_rate_per_sec
+from src.constants import JOB_BASE_ENERGY_PER_SEC
 
 
 def calculate_party(
@@ -15,6 +16,7 @@ def calculate_party(
     energy_increase_by_color: Optional[Dict[str, float]] = None,
     job_per_instance: Optional[List[Optional[str]]] = None,
     job_damage_buff_by_job: Optional[Dict[str, float]] = None,
+    color_energy_alpha: float = 1.0,
 ):
     energy_increase_by_color = energy_increase_by_color or {}
     job_per_instance = job_per_instance if job_per_instance is not None else [None] * len(party)
@@ -46,7 +48,7 @@ def calculate_party(
 
         total_damage += dmg
 
-        mp_mult = 1.0 + combine_energy_color_effect(
+        mp_mult = 1.0 + color_energy_alpha * combine_energy_color_effect(
             c.color, energy_decrease_by_color, energy_increase_by_color
         )
         mp_mult = max(0.0, mp_mult)
@@ -95,6 +97,10 @@ def compute_async_dps_ratio(
     job_energy_alpha_by_job: Optional[Dict[str, float]] = None,
     jelly_pickups_per_cycle: Optional[float] = None,
     seconds_per_cycle: Optional[float] = None,
+    score_double_on: bool = False,
+    score_double_alpha: float = 0.0,
+    score_double_evasion_extra_alpha: float = 0.0,
+    color_energy_alpha: float = 1.0,
 ) -> float:
     energy_increase_by_color = energy_increase_by_color or {}
     job_per_instance = job_per_instance if job_per_instance is not None else [None] * len(party)
@@ -127,7 +133,7 @@ def compute_async_dps_ratio(
         if base_mp > 0:
             base_sum += dmg / base_mp
 
-        mp_mult = 1.0 + combine_energy_color_effect(
+        mp_mult = 1.0 + color_energy_alpha * combine_energy_color_effect(
             c.color, energy_decrease_by_color, energy_increase_by_color
         )
         mp_mult = max(0.0, mp_mult)
@@ -143,14 +149,26 @@ def compute_async_dps_ratio(
                 jelly_pickups_per_cycle=jelly_pickups_per_cycle,
                 seconds_per_cycle=seconds_per_cycle,
             )
+
+            # 🆕 "모든 점수 2배" 소환석 옵션 - 회피도사(연속 충전)는 이 옵션으로
+            #    추가 이득을 더 크게 보는 것으로 추정 -> 회피도사 인스턴스에만
+            #    추가 보너스를 더 얹음 (젤리술사/방패지기는 아래 공통 배율만 받음)
+            if score_double_on and i < len(job_per_instance) and job_per_instance[i] == "회피도사":
+                evasion_raw_ratio = job_energy_rate_per_sec("회피도사") / JOB_BASE_ENERGY_PER_SEC
+                job_speed_ratio += score_double_evasion_extra_alpha * (evasion_raw_ratio - 1.0)
+
             eff_sum += (dmg / eff_mp) * job_speed_ratio
 
     if base_sum <= 0:
         return 1.0
 
-    # ✅ 게임속도 버프만 파티 전체에 균일하게 곱함 (전원이 동시에 빨라지는 효과이므로)
+    # ✅ 게임속도 버프는 파티 전체에 균일하게 곱함 (전원이 동시에 빨라지는 효과이므로)
     game_speed_mult = 1.0 + game_speed_alpha * game_speed_buff
-    return (eff_sum * game_speed_mult) / base_sum
+
+    # 🆕 "모든 점수 2배"의 공통(직업 무관) 효과 - 방패지기 포함 전원에게 균일 적용
+    score_double_mult = 1.0 + (score_double_alpha if score_double_on else 0.0)
+
+    return (eff_sum * game_speed_mult * score_double_mult) / base_sum
 
 
 def compute_required_energy(boss_hp: float, total_dmg_per_mp_sum: float) -> float:
