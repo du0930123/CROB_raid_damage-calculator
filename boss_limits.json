@@ -129,36 +129,6 @@
     "profiles": [
       {
         "anchor_ceiling_hp": 0.0,
-        "boss_hp_est": 42141401999.99999,
-        "is_hp_ceiling_anchor": true,
-        "label": "빨강(주로 비트 구성)",
-        "ref_P": 911281.978211009,
-        "ref_boss_hp_for_alpha": 42000000000.0,
-        "ref_common_damage_buff_pct": 82.0,
-        "ref_dps_ratio_async": 1.1666677865096675,
-        "ref_energy_decrease_by_color": {
-          "노랑": -0.14
-        },
-        "ref_game_speed_pct": 0.0,
-        "ref_job_text": "스+연 젤 1 스+캡 회 1 스+연 회 2",
-        "ref_party": "스네이크 4 캡 1",
-        "ref_required_norm": 46088.91759546552,
-        "ref_required_norm_adjusted": 39504.74859115655,
-        "ref_stone_crit_buff_pct": 46.0,
-        "ref_total_dmg": 309863249.99999994,
-        "ref_total_mp": 1708,
-        "ref_vec": {
-          "스네이크": 0.7916666666666666,
-          "캡틴아이스": 0.20833333333333334
-        },
-        "ref_weakness_bonus_by_color": {
-          "노랑": 0.0,
-          "파랑": 0.0
-        },
-        "threshold_cycles": 136
-      },
-      {
-        "anchor_ceiling_hp": 0.0,
         "boss_hp_est": 44599449180.0,
         "is_hp_ceiling_anchor": true,
         "label": "파랑(눈설탕, 캡아 구성)",
@@ -186,31 +156,116 @@
       },
       {
         "anchor_ceiling_hp": 0.0,
-        "boss_hp_est": 43894263175.00001,
+        "boss_hp_est": 57849453375.0,
+        "is_hp_ceiling_anchor": false,
+        "label": "파랑(눈설탕, 캡아 구성)",
+        "ref_P": 959732.7618243243,
+        "ref_boss_hp_for_alpha": 57651512320.0,
+        "ref_common_damage_buff_pct": 42.0,
+        "ref_dps_ratio_async": 1.0712740674999999,
+        "ref_effective_common_damage_buff_pct": 42.0,
+        "ref_energy_decrease_by_color": {},
+        "ref_game_speed_pct": 30.0,
+        "ref_job_condition_bonus_pct": 0.0,
+        "ref_job_condition_min": 2,
+        "ref_job_condition_on": false,
+        "ref_job_damage_buff_by_job": {
+          "젤리술사": 0.3
+        },
+        "ref_job_text": "눈+캡 젤 1 눈+연 젤 3 눈+공 젤 1",
+        "ref_party": "눈 5 캡 1",
+        "ref_required_norm": 60070.38064472463,
+        "ref_required_norm_adjusted": 56073.77464565074,
+        "ref_score_double_on": false,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_strengthen_on": false,
+        "ref_total_dmg": 359313375.0,
+        "ref_total_mp": 2250,
+        "ref_vec": {
+          "눈설탕": 0.8222222222222222,
+          "캡틴아이스": 0.17777777777777778
+        },
+        "ref_weaken_on": false,
+        "ref_weakness_bonus_by_color": {
+          "파랑": 0.0
+        },
+        "threshold_cycles": 161
+      },
+      {
+        "anchor_ceiling_hp": 0.0,
+        "boss_hp_est": 61189481525.00001,
         "is_hp_ceiling_anchor": false,
         "label": "노랑(주로 스네 구성)",
-        "ref_P": 712545.8322368423,
+        "ref_P": 924146.325657895,
         "ref_boss_hp_for_alpha": 60906062643.2,
         "ref_common_damage_buff_pct": 30.0,
-        "ref_dps_ratio_async": 1.039,
+        "ref_dps_ratio_async": 1.0982399999999999,
+        "ref_effective_common_damage_buff_pct": 30.0,
         "ref_energy_decrease_by_color": {},
         "ref_game_speed_pct": 0.0,
+        "ref_job_condition_bonus_pct": 0.0,
+        "ref_job_condition_min": 2,
+        "ref_job_condition_on": false,
+        "ref_job_damage_buff_by_job": {
+          "회피도사": 0.5
+        },
         "ref_job_text": "스+캡 회 1 스+연 회 3 스+석 회 1",
         "ref_party": "스 5 캡 1",
-        "ref_required_norm": 85476.69481414565,
-        "ref_required_norm_adjusted": 82268.23369985145,
+        "ref_required_norm": 65905.21538874408,
+        "ref_required_norm_adjusted": 60009.84792827077,
+        "ref_score_double_on": true,
         "ref_stone_crit_buff_pct": 0.0,
-        "ref_total_dmg": 272635175.00000006,
+        "ref_strengthen_on": false,
+        "ref_total_dmg": 353696425.00000006,
         "ref_total_mp": 2300,
         "ref_vec": {
           "스네이크": 0.8260869565217391,
           "캡틴아이스": 0.17391304347826086
         },
+        "ref_weaken_on": false,
         "ref_weakness_bonus_by_color": {
           "노랑": 0.0,
           "빨강": 0.0
         },
-        "threshold_cycles": 161
+        "threshold_cycles": 173
+      },
+      {
+        "anchor_ceiling_hp": 0.0,
+        "boss_hp_est": 42141401999.99999,
+        "is_hp_ceiling_anchor": true,
+        "label": "노랑(주로 스네 구성)",
+        "ref_P": 813721.9547872338,
+        "ref_boss_hp_for_alpha": 42000000000.0,
+        "ref_common_damage_buff_pct": 42.0,
+        "ref_dps_ratio_async": 1.0588666213757596,
+        "ref_effective_common_damage_buff_pct": 82.0,
+        "ref_energy_decrease_by_color": {
+          "노랑": -0.14
+        },
+        "ref_game_speed_pct": 0.0,
+        "ref_job_condition_bonus_pct": 40.0,
+        "ref_job_condition_min": 2,
+        "ref_job_condition_on": true,
+        "ref_job_damage_buff_by_job": {},
+        "ref_job_text": "스+연 회 2 스+연 젤 1 스+캡 회 1",
+        "ref_party": "스 4 캡 1",
+        "ref_required_norm": 51614.68208263086,
+        "ref_required_norm_adjusted": 48745.21591356725,
+        "ref_score_double_on": false,
+        "ref_stone_crit_buff_pct": 46.0,
+        "ref_strengthen_on": false,
+        "ref_total_dmg": 309863249.99999994,
+        "ref_total_mp": 1904,
+        "ref_vec": {
+          "스네이크": 0.7916666666666666,
+          "캡틴아이스": 0.20833333333333334
+        },
+        "ref_weaken_on": false,
+        "ref_weakness_bonus_by_color": {
+          "노랑": 0.0,
+          "파랑": 0.0
+        },
+        "threshold_cycles": 136
       }
     ]
   },
