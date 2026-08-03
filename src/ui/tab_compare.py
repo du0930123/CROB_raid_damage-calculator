@@ -12,6 +12,9 @@ from src.boss_config import (
     BOSS_LIST,
     DEFAULT_BOSS,
     get_job_energy_alpha_by_job,
+    get_score_double_alpha,
+    get_score_double_evasion_extra_alpha,
+    get_color_energy_alpha,
 )
 from src.clear_judge import judge_clear_for_table
 from src.stones import compute_avg_defense_effect_pct
@@ -73,6 +76,13 @@ def render_party_compare_tab():
             step=1.0,
             key="tab2_game_speed_buff_pct",
         )
+
+    score_double_on_cmp = st.checkbox(
+        "🆕 돌옵션 : 모든 점수 2배",
+        value=False,
+        key="tab2_score_double_on",
+        help="직업 무관하게 공통으로 캐스팅 속도가 조금 빨라지고, 회피도사는 추가로 더 이득을 봄",
+    )
 
     if weakness_colors_cmp:
         st.markdown("#### (비교) 약점 색별 조건부 피해증가율(%) 입력")
@@ -234,6 +244,7 @@ def render_party_compare_tab():
                     stone_crit_buff_pct_cmp=stone_crit_buff_pct_cmp,
                     use_game_speed_model_cmp=use_game_speed_model_cmp,
                     game_speed_buff_pct_cmp=game_speed_buff_pct_cmp,
+                    score_double_on_cmp=score_double_on_cmp,
                 )
                 rows.append(row)
 
@@ -256,6 +267,7 @@ def _calculate_compare_row(
     stone_crit_buff_pct_cmp,
     use_game_speed_model_cmp,
     game_speed_buff_pct_cmp,
+    score_double_on_cmp=False,
     energy_increase_by_color_cmp=None,
 ):
     energy_increase_by_color_cmp = energy_increase_by_color_cmp or {}
@@ -293,6 +305,7 @@ def _calculate_compare_row(
         energy_decrease_by_color=energy_decrease_by_color_cmp,
         energy_increase_by_color=energy_increase_by_color_cmp,
         job_per_instance=job_per_instance,
+        color_energy_alpha=get_color_energy_alpha(selected_boss_cmp),
     )
 
     boss_speed_alpha_cmp = GAME_SPEED_ALPHA_BY_BOSS.get(
@@ -311,6 +324,10 @@ def _calculate_compare_row(
         job_energy_alpha_by_job=boss_job_energy_alpha_by_job,
         game_speed_buff=game_speed_buff_pct_cmp / 100.0,
         game_speed_alpha=boss_speed_alpha_cmp if use_game_speed_model_cmp else 0.0,
+        score_double_on=score_double_on_cmp,
+        score_double_alpha=get_score_double_alpha(selected_boss_cmp),
+        score_double_evasion_extra_alpha=get_score_double_evasion_extra_alpha(selected_boss_cmp),
+        color_energy_alpha=get_color_energy_alpha(selected_boss_cmp),
     )
 
     dps_drop_async_pct = (dps_ratio_async - 1.0) * 100.0
@@ -357,7 +374,7 @@ def _calculate_compare_row(
         "반영 판정": judge_cols_speed.get("정규화판정"),
         "반영 여유율%": judge_cols_speed.get("여유율"),
         "반영 필요총에너지": judge_cols_speed.get("필요총에너지(boss_hp/P)"),
-        "약점 적용": _format_weakness_text(weakness_bonus_by_color_cmp),
+        "약점 적용": _format_weakness_text(weakness_bonus_by_color_cmp, party),
         "(비동기합산) 실효 딜 변화율%": float(f"{dps_drop_async_pct:+.2f}"),
         "1사이클 총 딜량": int(total_dmg),
         "총 스킬에너지당 딜량(Σ)": float(f"{total_dmg_per_mp_sum:.2f}"),
@@ -369,13 +386,27 @@ def _calculate_compare_row(
     }
 
 
-def _format_weakness_text(weakness_bonus_by_color_cmp):
-    return (
-        ", ".join(
-            [
-                f"{k}(+30%+{v * 100:+.0f}%)"
-                for k, v in weakness_bonus_by_color_cmp.items()
-            ]
-        )
-        or "-"
+def _format_weakness_text(weakness_bonus_by_color_cmp, party=None):
+    """
+    ⚠️ 예전엔 설정값(weakness_bonus_by_color_cmp)을 무조건 그대로 표시해서,
+    실제로 그 파티에 해당 색 캐릭터가 하나도 없어도 "적용된 것처럼" 보였음.
+    이제 party를 받아서, 그 파티에 진짜로 그 색 캐릭터가 있을 때만 표시함.
+    """
+    if not weakness_bonus_by_color_cmp:
+        return "-"
+
+    party_colors = set()
+    if party:
+        party_colors = {getattr(c, "color", None) for c in party}
+
+    applicable = {
+        k: v for k, v in weakness_bonus_by_color_cmp.items()
+        if party is None or k in party_colors
+    }
+
+    if not applicable:
+        return "해당없음(약점색 캐릭터 없음)"
+
+    return ", ".join(
+        f"{k}(+30%+{v * 100:+.0f}%)" for k, v in applicable.items()
     )
