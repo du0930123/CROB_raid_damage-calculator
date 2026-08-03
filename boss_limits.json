@@ -159,34 +159,6 @@
       },
       {
         "anchor_ceiling_hp": 0.0,
-        "boss_hp_est": 61189481525.0,
-        "is_hp_ceiling_anchor": false,
-        "label": "노랑(주로 스네 구성)",
-        "ref_P": 924146.3256578948,
-        "ref_boss_hp_for_alpha": 60906062643.2,
-        "ref_common_damage_buff_pct": 80.0,
-        "ref_dps_ratio_async": 1.039,
-        "ref_energy_decrease_by_color": {},
-        "ref_game_speed_pct": 0.0,
-        "ref_job_text": "스+연 회 3 스+캡 회 1 스+석 회 1",
-        "ref_party": "스네이크 5 캡틴아이스 1",
-        "ref_required_norm": 65905.2153887441,
-        "ref_required_norm_adjusted": 63431.391134498655,
-        "ref_stone_crit_buff_pct": 0.0,
-        "ref_total_dmg": 353696425.0,
-        "ref_total_mp": 2300,
-        "ref_vec": {
-          "스네이크": 0.8260869565217391,
-          "캡틴아이스": 0.17391304347826086
-        },
-        "ref_weakness_bonus_by_color": {
-          "노랑": 0.0,
-          "빨강": 0.0
-        },
-        "threshold_cycles": 173
-      },
-      {
-        "anchor_ceiling_hp": 0.0,
         "boss_hp_est": 44599449180.0,
         "is_hp_ceiling_anchor": true,
         "label": "파랑(눈설탕, 캡아 구성)",
