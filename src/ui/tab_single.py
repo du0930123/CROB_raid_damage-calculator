@@ -15,6 +15,9 @@ from src.boss_config import (
     BOSS_LIST,
     DEFAULT_BOSS,
     get_job_energy_alpha_by_job,
+    get_score_double_alpha,
+    get_score_double_evasion_extra_alpha,
+    get_color_energy_alpha,
 )
 from src.clear_judge import render_clear_judge_box, compute_energy_limit_weighted
 from src.jobs import (
@@ -87,6 +90,13 @@ def render_single_party_tab():
             step=1.0,
             key="tab1_game_speed_buff_pct",
         )
+
+    score_double_on = st.checkbox(
+        "🆕 돌옵션 : 모든 점수 2배",
+        value=False,
+        key="tab1_score_double_on",
+        help="직업 무관하게 공통으로 캐스팅 속도가 조금 빨라지고, 회피도사는 추가로 더 이득을 봄",
+    )
 
     if weakness_colors:
         st.markdown("#### 약점 색별 조건부 피해증가율(%) 입력")
@@ -282,6 +292,7 @@ def render_single_party_tab():
                 energy_increase_by_color=energy_increase_by_color,
                 job_per_instance=job_per_instance,
                 job_damage_buff_by_job=job_damage_buff_by_job,
+                color_energy_alpha=get_color_energy_alpha(selected_boss),
             )
 
             st.session_state["LAST_CALC_OPTS"] = {
@@ -319,6 +330,11 @@ def render_single_party_tab():
                 st.write(f"- 게임속도 증가율: **{game_speed_buff_pct:.0f}%** (보스별 보정 적용)")
             else:
                 st.write("- 게임속도 증가율: **미적용**")
+
+            if score_double_on:
+                st.write("- 🆕 모든 점수 2배: **적용** (직업 무관 공통 가속 + 회피도사 추가 가속)")
+            else:
+                st.write("- 🆕 모든 점수 2배: **미적용**")
 
             st.write(f"- 공통 피해증가율: **{common_damage_buff_pct:.0f}%** (전원 적용)")
 
@@ -376,6 +392,7 @@ def render_single_party_tab():
                     job_damage_buff_by_job=job_damage_buff_by_job,
                     use_game_speed_model=use_game_speed_model,
                     game_speed_buff_pct=game_speed_buff_pct,
+                    score_double_on=score_double_on,
                 )
 
         except Exception as e:
@@ -401,6 +418,7 @@ def _render_boss_hp_result(
     energy_increase_by_color=None,
     job_per_instance=None,
     job_damage_buff_by_job=None,
+    score_double_on=False,
 ):
     energy_increase_by_color = energy_increase_by_color or {}
     job_per_instance = job_per_instance if job_per_instance is not None else [None] * len(party)
@@ -439,6 +457,10 @@ def _render_boss_hp_result(
         game_speed_alpha=boss_speed_alpha if use_game_speed_model else 0.0,
         job_energy_alpha=DEFAULT_JOB_ENERGY_ALPHA,
         job_energy_alpha_by_job=boss_job_energy_alpha_by_job,
+        score_double_on=score_double_on,
+        score_double_alpha=get_score_double_alpha(selected_boss),
+        score_double_evasion_extra_alpha=get_score_double_evasion_extra_alpha(selected_boss),
+        color_energy_alpha=get_color_energy_alpha(selected_boss),
     )
 
     p_effective = total_dmg_per_mp_sum * dps_ratio_async
@@ -467,6 +489,7 @@ def _render_boss_hp_result(
         or bool(energy_decrease_by_color)
         or bool(energy_increase_by_color)
         or any(j is not None for j in job_per_instance)
+        or score_double_on
     )
 
     if show_async_block:
