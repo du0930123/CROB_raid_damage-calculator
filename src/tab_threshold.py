@@ -3,17 +3,21 @@ import json
 import streamlit as st
 from typing import Dict, Any
 from src.boss_limits_store import get_limits_store, save_limits
-from src.constants import COLOR_OPTIONS
+from src.constants import COLOR_OPTIONS, JOB_OPTIONS, JOB_PARTY_CONDITION_MIN_COUNT
 
 # ✅ clear_judge.py에 아래 함수가 있어야 함:
 # - party_to_mp_share_vector(party) -> Dict[str, float]
 from src.clear_judge import party_to_mp_share_vector
-from src.jobs import build_job_assignments_from_text, resolve_job_per_instance
+from src.jobs import build_job_assignments_from_text, resolve_job_per_instance, total_job_assigned_count
 from src.calculator import compute_async_dps_ratio
+from src.stones import party_size_condition_bonus_pct, compute_avg_defense_effect_pct
 from src.boss_config import (
     GAME_SPEED_ALPHA_BY_BOSS,
     DEFAULT_GAME_SPEED_ALPHA,
     get_job_energy_alpha_by_job,
+    get_score_double_alpha,
+    get_score_double_evasion_extra_alpha,
+    get_color_energy_alpha,
 )
 
 
@@ -268,6 +272,11 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
             key=f"ref_game_speed_{boss}_{party_type_label}",
         )
 
+        ref_score_double_on = st.checkbox(
+            "🆕 이 기준 파티가 실제로 '모든 점수 2배' 옵션을 썼음",
+            key=f"ref_score_double_on_{boss}_{party_type_label}",
+        )
+
         ref_boss_hp_for_alpha = st.number_input(
             "이 기준 파티가 클리어 당시 보스 체력(선택, 체력구간별 alpha 판정용)",
             min_value=0.0,
@@ -310,18 +319,79 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                 ),
             )
 
+        st.markdown("#### 🆕 소환석: 직업 2명↑ 조건부 전체 피해 증가")
+        ref_job_condition_on = st.checkbox(
+            "적용", key=f"ref_job_condition_on_{boss}_{party_type_label}"
+        )
+        ref_job_condition_min = JOB_PARTY_CONDITION_MIN_COUNT
+        ref_job_condition_bonus_pct = 0.0
+        if ref_job_condition_on:
+            ref_job_condition_min = st.number_input(
+                "최소 인원 조건", min_value=1, value=JOB_PARTY_CONDITION_MIN_COUNT,
+                step=1, key=f"ref_job_condition_min_{boss}_{party_type_label}",
+            )
+            ref_job_condition_bonus_pct = st.number_input(
+                "조건 충족시 전체 피해 증가(%)", min_value=0.0, value=0.0,
+                step=1.0, key=f"ref_job_condition_bonus_{boss}_{party_type_label}",
+            )
+
+        st.markdown("#### 🆕 소환석: 직업별 캐릭터 피해량 증가")
+        ref_job_damage_buff_by_job: Dict[str, float] = {}
+        for job in JOB_OPTIONS:
+            on = st.checkbox(
+                f"{job} 피해 증가 적용", key=f"ref_job_dmg_on_{boss}_{party_type_label}_{job}"
+            )
+            if on:
+                pct = st.number_input(
+                    f"{job} 피해 증가(%)", min_value=-100.0, max_value=300.0,
+                    value=0.0, step=1.0, key=f"ref_job_dmg_pct_{boss}_{party_type_label}_{job}",
+                )
+                ref_job_damage_buff_by_job[job] = pct / 100.0
+
+        st.markdown("#### 🆕 소환석: 몬스터 방어력 약화/강화")
+        st.caption("지속시간·발생주기·피해율은 고정값이라, 이 기준 파티가 그 옵션이 있는 보스를 상대했는지만 체크하면 돼요.")
+        col_wd1, col_wd2 = st.columns(2)
+        with col_wd1:
+            ref_weaken_on = st.checkbox("방어력 약화 있음", key=f"ref_weaken_on_{boss}_{party_type_label}")
+        with col_wd2:
+            ref_strengthen_on = st.checkbox("방어력 강화 있음", key=f"ref_strengthen_on_{boss}_{party_type_label}")
+
         # ✅ 저장 버튼
         if st.button("✅ 이 보스 기준 프로필 저장(party_type 무시)", key=f"save_profile_{boss}_{party_type_label}"):
             try:
                 party = build_party_from_text(ref_party_text)
 
-                # 기준 파티 계산 (순수, 직업/겜속 미반영)
+                # ✅ 직업 배정 먼저 만들어서(탭1과 동일 순서), 직업 2명↑ 조건부 보너스와
+                #    방어약화/강화 평균을 공통피해증가율에 합친 뒤(effective) 계산에 반영
+                ref_job_assignments = build_job_assignments_from_text(ref_job_text)
+                ref_job_per_instance = resolve_job_per_instance(party, ref_job_assignments)
+
+                ref_job_assigned_count = total_job_assigned_count(ref_job_per_instance)
+                ref_job_condition_bonus = (
+                    party_size_condition_bonus_pct(
+                        ref_job_assigned_count, ref_job_condition_min, ref_job_condition_bonus_pct
+                    )
+                    if ref_job_condition_on
+                    else 0.0
+                )
+                ref_defense_avg_pct = compute_avg_defense_effect_pct(
+                    weaken_on=ref_weaken_on,
+                    strengthen_on=ref_strengthen_on,
+                )
+                effective_common_damage_buff_pct = (
+                    common_damage_buff_pct + ref_job_condition_bonus + ref_defense_avg_pct
+                )
+
+                # 기준 파티 계산 (실제로 썼던 직업/버프까지 반영)
                 total_dmg, total_dmg_per_mp_sum, total_mp, _, _, _ = calculate_party(
                     party=party,
-                    common_damage_buff=common_damage_buff_pct / 100.0,
+                    common_damage_buff=effective_common_damage_buff_pct / 100.0,
                     stone_crit_buff=stone_crit_buff_pct / 100.0,
                     weakness_bonus_by_color=weakness_bonus_by_color,
                     energy_decrease_by_color=energy_decrease_by_color,
+                    job_per_instance=ref_job_per_instance,
+                    job_damage_buff_by_job=ref_job_damage_buff_by_job,
+                    color_energy_alpha=get_color_energy_alpha(boss),
                 )
                 ref_vec = party_to_mp_share_vector(party)
                 if not ref_vec:
@@ -345,9 +415,6 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                 # ✅ 이 기준 파티가 "실제로 썼던" 직업/겜속을 반영한 adjusted 기준값도 계산
                 #    (이걸 안 만들면, 나중에 새 파티 조회할 때 직업/겜속 보너스가
                 #     기준값에 한 번(암묵적으로), 쿼리 계산에 또 한 번, 이중으로 들어감)
-                ref_job_assignments = build_job_assignments_from_text(ref_job_text)
-                ref_job_per_instance = resolve_job_per_instance(party, ref_job_assignments)
-
                 ref_alpha_map = get_job_energy_alpha_by_job(
                     boss_name=boss,
                     boss_hp_total=ref_boss_hp_for_alpha,
@@ -357,14 +424,19 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
 
                 ref_dps_ratio_async = compute_async_dps_ratio(
                     party=party,
-                    common_damage_buff=common_damage_buff_pct / 100.0,
+                    common_damage_buff=effective_common_damage_buff_pct / 100.0,
                     stone_crit_buff=stone_crit_buff_pct / 100.0,
                     weakness_bonus_by_color=weakness_bonus_by_color,
                     energy_decrease_by_color=energy_decrease_by_color,
                     job_per_instance=ref_job_per_instance,
+                    job_damage_buff_by_job=ref_job_damage_buff_by_job,
                     job_energy_alpha_by_job=ref_alpha_map,
                     game_speed_buff=ref_game_speed_pct / 100.0,
                     game_speed_alpha=ref_speed_alpha,
+                    score_double_on=ref_score_double_on,
+                    score_double_alpha=get_score_double_alpha(boss),
+                    score_double_evasion_extra_alpha=get_score_double_evasion_extra_alpha(boss),
+                    color_energy_alpha=get_color_energy_alpha(boss),
                 )
 
                 ref_required_norm_adjusted = ref_required_norm / ref_dps_ratio_async
@@ -397,10 +469,20 @@ def render_threshold_tab(COLOR_OPTIONS, build_party_from_text, calculate_party, 
                     "ref_game_speed_pct": float(ref_game_speed_pct),
                     "ref_boss_hp_for_alpha": float(ref_boss_hp_for_alpha),
                     "ref_dps_ratio_async": float(ref_dps_ratio_async),
+                    "ref_score_double_on": bool(ref_score_double_on),
 
                     # 🆕 체력 임계값 앵커 여부 + 담당 상한선
                     "is_hp_ceiling_anchor": bool(is_hp_ceiling_anchor),
                     "anchor_ceiling_hp": float(anchor_ceiling_hp),
+
+                    # 🆕 이 기준 파티가 실제로 썼던 신규 직업시스템 / 소환석 옵션 (참고/재현용)
+                    "ref_job_condition_on": bool(ref_job_condition_on),
+                    "ref_job_condition_min": int(ref_job_condition_min),
+                    "ref_job_condition_bonus_pct": float(ref_job_condition_bonus_pct),
+                    "ref_job_damage_buff_by_job": dict(ref_job_damage_buff_by_job),
+                    "ref_weaken_on": bool(ref_weaken_on),
+                    "ref_strengthen_on": bool(ref_strengthen_on),
+                    "ref_effective_common_damage_buff_pct": float(effective_common_damage_buff_pct),
                 })
                 
                 save_limits(store)
