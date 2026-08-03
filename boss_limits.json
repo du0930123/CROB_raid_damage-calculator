@@ -183,6 +183,34 @@
           "파랑": 0.0
         },
         "threshold_cycles": 130
+      },
+      {
+        "anchor_ceiling_hp": 0.0,
+        "boss_hp_est": 43894263175.00001,
+        "is_hp_ceiling_anchor": false,
+        "label": "노랑(주로 스네 구성)",
+        "ref_P": 712545.8322368423,
+        "ref_boss_hp_for_alpha": 60906062643.2,
+        "ref_common_damage_buff_pct": 30.0,
+        "ref_dps_ratio_async": 1.039,
+        "ref_energy_decrease_by_color": {},
+        "ref_game_speed_pct": 0.0,
+        "ref_job_text": "스+캡 회 1 스+연 회 3 스+석 회 1",
+        "ref_party": "스 5 캡 1",
+        "ref_required_norm": 85476.69481414565,
+        "ref_required_norm_adjusted": 82268.23369985145,
+        "ref_stone_crit_buff_pct": 0.0,
+        "ref_total_dmg": 272635175.00000006,
+        "ref_total_mp": 2300,
+        "ref_vec": {
+          "스네이크": 0.8260869565217391,
+          "캡틴아이스": 0.17391304347826086
+        },
+        "ref_weakness_bonus_by_color": {
+          "노랑": 0.0,
+          "빨강": 0.0
+        },
+        "threshold_cycles": 161
       }
     ]
   },
