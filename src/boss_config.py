@@ -5,7 +5,7 @@ DEFAULT_GAME_SPEED_ALPHA = 0.35
 GAME_SPEED_ALPHA_BY_BOSS = {
     # 실측 역산: 인삼4+캡틴아이스1(젤리술사), 게임속도58%, 여유율 목표 12%
     # job_energy_alpha(0.0157, 검증됨)는 고정하고 game_speed_alpha만 역산함
-    "아수라": 0.2031,
+    "아수라": 0.05,
     "두억시니": 0.4,
     "사마귀": 0.35,
     "무쇠꾼": 0.4,
@@ -32,7 +32,9 @@ DEFAULT_JOB_ENERGY_ALPHA = 1.0
 
 JOB_ENERGY_ALPHA_BY_BOSS_AND_JOB = {
     "아수라": {
-        "회피도사": 0.0078,
+        # 회피도사(연속 충전)가 젤리술사(버스트 충전)보다 실제 효율이 더 높다고
+        # 판단 -> alpha를 더 높게 잡음 (여유율 기준 약 3.8%p 차이 나도록 역산한 값)
+        "회피도사": 0.012,
         "젤리술사": 0.0078,
     },
 }
@@ -67,3 +69,51 @@ def get_job_energy_alpha_by_job(
         return dict(tier.get("high_alpha_by_job", base_map))
 
     return base_map
+
+
+# ============================
+# 🆕 소환석: "모든 점수 2배" 옵션
+# - 이 옵션이 켜지면 직업 무관하게 공통으로 어느 정도 캐스팅 속도가 빨라지고
+#   (score_double_alpha), 회피도사(연속 충전)는 추가로 더 큰 이득을 보는 것으로
+#   추정됨 (score_double_evasion_extra_alpha).
+# - 실측 기반 역산값: 방패지기/젤리술사 여유율 +5%p, 회피도사 여유율 +7%p 근처가
+#   되도록 맞춘 값 (스네이크4+캡틴아이스1, 공통피해30%, 아수라 기준으로 역산)
+# ============================
+DEFAULT_SCORE_DOUBLE_ALPHA = 0.0
+DEFAULT_SCORE_DOUBLE_EVASION_EXTRA_ALPHA = 0.0
+
+SCORE_DOUBLE_ALPHA_BY_BOSS = {
+    "아수라": 0.024,
+}
+
+SCORE_DOUBLE_EVASION_EXTRA_ALPHA_BY_BOSS = {
+    "아수라": 0.0025,
+}
+
+
+def get_score_double_alpha(boss_name: str) -> float:
+    return SCORE_DOUBLE_ALPHA_BY_BOSS.get(boss_name, DEFAULT_SCORE_DOUBLE_ALPHA)
+
+
+def get_score_double_evasion_extra_alpha(boss_name: str) -> float:
+    return SCORE_DOUBLE_EVASION_EXTRA_ALPHA_BY_BOSS.get(boss_name, DEFAULT_SCORE_DOUBLE_EVASION_EXTRA_ALPHA)
+
+
+# ============================
+# 🆕 색상별 에너지 획득량 증가/감소 - 감쇠(alpha)
+# - "빨강 에너지 획득량 +12%" 같은 소환석 옵션을 입력값 그대로(감쇠 없이) 반영하면
+#   파티 대부분이 그 색이면(예: 6/7명) 여유율이 20%p 가까이 튀는 등 과도하게
+#   민감해짐. 직업 에너지 alpha와 똑같은 이유로("이론상 여분 에너지가 실제
+#   캐스팅 증가로 얼마나 전환되는지는 제한적") 여기도 감쇠를 적용함.
+# - 실측 역산: 빨강 12% 옵션이 여유율에는 약 +1.2%p 수준만 기여하도록 맞춘 값
+#   (비트4+뱀파1+캡틴아이스1+레판1, 아수라 기준)
+# ============================
+DEFAULT_COLOR_ENERGY_ALPHA = 1.0
+
+COLOR_ENERGY_ALPHA_BY_BOSS = {
+    "아수라": 0.08,
+}
+
+
+def get_color_energy_alpha(boss_name: str) -> float:
+    return COLOR_ENERGY_ALPHA_BY_BOSS.get(boss_name, DEFAULT_COLOR_ENERGY_ALPHA)
