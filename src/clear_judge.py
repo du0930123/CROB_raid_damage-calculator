@@ -8,6 +8,9 @@ from src.boss_config import (
     GAME_SPEED_ALPHA_BY_BOSS,
     DEFAULT_GAME_SPEED_ALPHA,
     get_job_energy_alpha_by_job,
+    get_score_double_alpha,
+    get_score_double_evasion_extra_alpha,
+    get_color_energy_alpha,
 )
 
 
@@ -165,9 +168,14 @@ def _recompute_adjusted_norm(p: Dict[str, Any], boss: str) -> Optional[float]:
             weakness_bonus_by_color=p.get("ref_weakness_bonus_by_color", {}) or {},
             energy_decrease_by_color=p.get("ref_energy_decrease_by_color", {}) or {},
             job_per_instance=job_per_instance,
+            job_damage_buff_by_job=p.get("ref_job_damage_buff_by_job", {}) or {},
             job_energy_alpha_by_job=alpha_map,
             game_speed_buff=float(p.get("ref_game_speed_pct", 0.0) or 0.0) / 100.0,
             game_speed_alpha=speed_alpha,
+            score_double_on=bool(p.get("ref_score_double_on", False)),
+            score_double_alpha=get_score_double_alpha(boss),
+            score_double_evasion_extra_alpha=get_score_double_evasion_extra_alpha(boss),
+            color_energy_alpha=get_color_energy_alpha(boss),
         )
 
         if dps_ratio is None or dps_ratio <= 0:
@@ -214,23 +222,18 @@ def compute_energy_limit_weighted(
     if not profiles:
         return None, None, "선택한 보스에 저장된 profiles가 없어요(탭3 관리자 저장 필요)."
 
-    # ✅ 체력 임계값 앵커 필터링 (양방향)
-    #    ⚠️ 앵커 경계는 boss_hp_est(추정값 = 사이클수×딜량) 대신,
-    #       프로필 저장 시 입력한 "실제 보스 체력"(ref_boss_hp_for_alpha)을 우선 사용함.
-    #       boss_hp_est는 실측 사이클로 역산한 추정치라, 화면에 뜨는 진짜 체력
-    #       숫자와 오차가 생길 수 있어서 경계 판정용으론 부정확할 수 있음.
-    #       ref_boss_hp_for_alpha가 없으면(0 이하) boss_hp_est로 폴백.
-    #    🆕 "앵커가 담당하는 체력 상한선"(anchor_ceiling_hp)은 앵커 자신의 실제
-    #       체력과 다를 수 있음. 예: 700레벨 돌을 앵커로 잡았는데, 701~705레벨까지도
-    #       같은 메커니즘이라고 판단되면, 앵커 자신의 체력(예: 420억)보다 더 큰
-    #       상한선(예: 450억)을 따로 지정해서, 그 범위까지 이 앵커가 계속 담당하게
-    #       할 수 있음. 지정 안 하면(0 이하) 앵커 자신의 체력을 상한으로 씀.
-    #    1) query_boss_hp가 어떤 앵커의 담당 상한선 이하면
-    #       -> 그 앵커(중 가장 낮은 상한선) 이하 프로필로만 후보를 좁힘
-    #    2) query_boss_hp가 모든 앵커의 담당 상한선보다 높으면
-    #       -> 그 앵커(하위 티어 기준)들은 아예 후보에서 제외
-    #          (앵커가 아닌 일반 프로필만 남으면 그걸로 매칭, 하나도 안 남으면
-    #           안전하게 전체 프로필로 폴백)
+    # ✅ 체력 임계값 앵커 필터링 (단순화 버전)
+    #    ⚠️ 앵커 경계는 boss_hp_est(추정값) 대신, "실제 보스 체력"
+    #       (ref_boss_hp_for_alpha)을 우선 사용함.
+    #    🆕 예전엔 "적용 가능한 앵커들 중 가장 낮은 상한선"으로 전체 프로필 풀을
+    #       한번 더 좁혔는데(비앵커 프로필까지 포함해서), 그러면 진짜 비슷한
+    #       비앵커 프로필이 상한선 밖으로 밀려나 제외되는 문제가 있었음.
+    #       이제는 훨씬 단순하게: 쿼리 체력에 "적용되는 앵커가 하나라도 있으면,
+    #       그 적용되는 앵커들끼리만" 유사도로 혼합해서 매칭함.
+    #    1) query_boss_hp가 어떤 앵커든 담당 상한선 이하면
+    #       -> 그 조건을 만족하는 앵커들(전부) 사이에서만 유사도로 혼합
+    #    2) 그런 앵커가 하나도 없으면
+    #       -> 앵커 프로필은 전부 제외, 일반(비앵커) 프로필들 사이에서 매칭
     def _tier_hp(prof):
         # ✅ 앵커 "경계 판정"에만 실제 보스체력(ref_boss_hp_for_alpha)을 우선 사용.
         #    (여유율 계산 자체(ref_required_norm)는 boss_hp_est 그대로 씀 - 별개!)
@@ -254,13 +257,8 @@ def compute_energy_limit_weighted(
             p for p in anchors if _anchor_ceiling(p) >= float(query_boss_hp)
         ]
         if applicable_anchors:
-            ceiling = min(_anchor_ceiling(p) for p in applicable_anchors)
-            filtered = [
-                p for p in profiles
-                if _tier_hp(p) is not None and _tier_hp(p) <= ceiling
-            ]
-            if filtered:
-                profiles = filtered
+            # 🆕 적용되는 앵커들끼리만 후보로 삼음 (다른 비앵커 프로필은 안 섞음)
+            profiles = applicable_anchors
         elif anchors:
             # 쿼리가 존재하는 모든 앵커의 담당 상한선보다 체력이 높음 -> 앵커(하위 티어) 프로필 제외
             non_anchor_profiles = [p for p in profiles if not p.get("is_hp_ceiling_anchor")]
@@ -298,11 +296,20 @@ def compute_energy_limit_weighted(
     if not scored:
         return None, None, "profiles는 있는데 ref_vec/기준값이 유효한 항목이 없어요."
 
-    # 가까운 순 정렬 후 상위 k개만 사용
+    # ✅ 유사도(dist) 기반 가중치를 다시 살림 (단순평균 -> 완만한 거리가중 복귀)
+    #    이유: "완전히 똑같은 파티(dist=0)"를 넣었는데도, 전혀 안 비슷한
+    #    프로필(dist가 큼)과 억지로 50:50 평균이 나버려서, 자기 자신과
+    #    똑같이 조회해도 여유율이 0%가 안 되는 문제가 있었음.
+    #    -> dist=0(완전 일치)에는 압도적으로 큰 가중치를, dist가 큰 프로필에는
+    #       작지만 0은 아닌 가중치를 줘서, "정확히 일치하면 그 프로필을
+    #       거의 그대로 따르고, 안 비슷하면 여러 프로필을 골고루 섞어서
+    #       추정"하는 게 둘 다 되도록 함.
+    #    (eps=1e-6, power=1.0 기준: dist=0 -> weight≈1,000,000, dist=1.65 -> weight≈0.6
+    #     즉 완전 일치 프로필이 있으면 그게 사실상 100% 반영되고, 없으면
+    #     상대적으로 가까운 프로필 위주로 자연스럽게 섞임)
     scored.sort(key=lambda x: x[0])
     top = scored[: max(1, min(k, len(scored)))]
 
-    # 가중치 계산
     weights = []
     for d, p, limit_norm in top:
         w = 1.0 / ((d + eps) ** power)
