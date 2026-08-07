@@ -506,8 +506,9 @@ def _render_boss_hp_result(
             title="정규화 클리어 판정 (겜속·에너지·직업 반영)",
             show_notice=True,
             notice_text=(
-                "⚠️ 700레벨 이상 돌과 699레벨 이하 돌은 서로 다른 기준점으로 비교됨<br>"
-                "700레벨 이상 판정은 '모든 주술을 미루는 극한 빌드' 사용을 전제로 한 기준"
+                "⚠️ 공주쓰는 경우 여유로 떠도 클리어 힘들수있음<br>"
+                "700레벨 이상 판정은 '모든 주술을 미루는 극한 빌드' 사용을 전제로 한 기준<br>"
+                "노공 겜속돌일경우 여유율 -10 내외로떠도 해볼만할수있음"
             ),
             norm_field="ref_required_norm_adjusted",
             tier_boss_hp=base_boss_hp,
