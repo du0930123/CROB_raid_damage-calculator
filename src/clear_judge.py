@@ -380,7 +380,7 @@ def render_clear_judge_box(
 
     if show_notice:
         notice_html = notice_text or (
-            "빌드, 겜속, 돌 색에따라 클리어여부 달라짐<br>"
+            "공주쓰는경우 여유떠도 힘들수있음<br>"
             "700이상은 모점2배나 겜속30 있어야 0페넘어감"
         )
         st.markdown(
